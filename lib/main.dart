@@ -1,293 +1,210 @@
-import 'package:flutter/material.dart';
-import 'package:flame/game.dart';
+import 'dart:async';
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
-import 'package:flame/collisions.dart';
-import 'dart:math' as math;
+import 'package:flame/game.dart';
+import 'package:flame/input.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
-  runApp(
-    MaterialApp(
-      home: Scaffold(
-        body: GameWidget(
-          game: CollectorGame(),
-          overlayBuilderMap: {
-            'gameOver': (BuildContext context, CollectorGame gameRef) {
-              return GameOverMenu(game: gameRef);
-            },
-          },
-        ),
-      ),
-    ),
-  );
-}
-
-// Game over overlay widget
-class GameOverMenu extends StatelessWidget {
-  final CollectorGame game;
-
-  const GameOverMenu({super.key, required this.game});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 300,
-        height: 300,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Game Over',
-              style: TextStyle(
-                fontSize: 32,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Score: ${game.score}',
-              style: const TextStyle(
-                fontSize: 24,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () {
-                // Remove the overlay and restart the game
-                game.overlays.remove('gameOver');
-                game.reset();
-                game.resumeEngine();
-              },
-              child: const Text('Try Again'),
-            ),
-          ],
-        ),
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations(
+    [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+  ).then((_) {
+    runApp(
+      GameWidget(
+        game: BirdGame(),
       ),
     );
-  }
+  });
 }
 
-// Main game class
-class CollectorGame extends FlameGame with HasCollisionDetection, TapCallbacks, DragCallbacks {
-  // Game properties
-  late Player player;
-  late TextComponent scoreText;
-  int score = 0;
-  final _random = math.Random();
-  double gameTime = 0.0;
-  double itemSpawnTime = 0.0;
-  double obstacleSpawnTime = 0.0;
+class BirdGame extends FlameGame with TapDetector, KeyboardEvents {
+  // Bird component
+  late Bird bird;
+
+  // Background components
+  late List<Ground> grounds = [];
+  late List<Tree> trees = [];
+
+  // Game variables
+  double speed = 120;
 
   @override
   Future<void> onLoad() async {
-    // Add background (use a colored rectangle for now)
-    add(RectangleComponent(
-      size: size,
-      paint: Paint()..color = const Color(0xFF333333),
-    )..priority = -1);
+    // Load bird sprite frames for animation
+    final frame1 = await Sprite.load('frame-1.png');
+    final frame2 = await Sprite.load('frame-2.png');
+    final frame3 = await Sprite.load('frame-3.png');
+    final frame4 = await Sprite.load('frame-4.png');
+    final frame5 = await Sprite.load('frame-5.png');
+    final frame6 = await Sprite.load('frame-6.png');
+    final frame7 = await Sprite.load('frame-7.png');
+    final frame8 = await Sprite.load('frame-8.png');
 
-    // Add player
-    player = Player();
-    add(player);
-
-    // Add score display
-    scoreText = TextComponent(
-      text: 'Score: 0',
-      textRenderer: TextPaint(
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 24.0,
-        ),
-      ),
+    // Create sprite animation for bird
+    final birdAnimation = SpriteAnimation.spriteList(
+      [frame1, frame2, frame3, frame4, frame5, frame6, frame7, frame8],
+      stepTime: 0.1, // time between frames
     );
-    scoreText.position = Vector2(20, 20);
-    add(scoreText);
 
-    // Initialize collision detection
-    add(ScreenHitbox());
+    // Add bird component to game
+    bird = Bird(animation: birdAnimation);
+    add(bird);
+
+    // Initialize background - sky is the game background color
+    // camera. = const Color(0xFF87CEEB); // Sky blue color
+
+    // Add ground components for infinite scrolling
+    for (int i = 0; i < 2; i++) {
+      final ground = Ground(
+        position: Vector2(i * size.x, size.y - 100),
+        size: Vector2(size.x, 100),
+      );
+      grounds.add(ground);
+      add(ground);
+    }
+
+    // Add some trees
+    for (int i = 0; i < 8; i++) {
+      final tree = Tree(
+        position: Vector2(
+          i * 300 + 200 + (i % 2) * 100,
+          size.y - 100 - 150,
+        ),
+      );
+      trees.add(tree);
+      add(tree);
+    }
+
+    return super.onLoad();
   }
 
   @override
   void update(double dt) {
     super.update(dt);
 
-    gameTime += dt;
-    itemSpawnTime += dt;
-    obstacleSpawnTime += dt;
+    // Update grounds for infinite scrolling
+    for (final ground in grounds) {
+      ground.position.x -= speed * dt;
 
-    // Spawn collectible items every 1.5 seconds
-    if (itemSpawnTime > 1.5) {
-      spawnCollectible();
-      itemSpawnTime = 0;
-    }
-
-    // Spawn obstacles every 2.5 seconds
-    if (obstacleSpawnTime > 2.5) {
-      spawnObstacle();
-      obstacleSpawnTime = 0;
-    }
-  }
-
-  void spawnCollectible() {
-    final collectible = Collectible();
-    collectible.position = Vector2(
-      _random.nextDouble() * (size.x - 40),
-      _random.nextDouble() * (size.y - 40),
-    );
-    add(collectible);
-  }
-
-  void spawnObstacle() {
-    final obstacle = Obstacle();
-    obstacle.position = Vector2(
-      _random.nextDouble() * (size.x - 60),
-      _random.nextDouble() * (size.y - 60),
-    );
-    add(obstacle);
-  }
-
-  void increaseScore() {
-    score++;
-    scoreText.text = 'Score: $score';
-  }
-
-  @override
-  void onTapDown(TapDownEvent event) {
-    player.moveTo(event.canvasPosition);
-  }
-
-  @override
-  void onDragUpdate(DragUpdateEvent event) {
-    player.position.add(event.canvasDelta);
-  }
-
-  void reset() {
-    // Remove all game components except the background and player
-    children.whereType<Collectible>().forEach((child) => child.removeFromParent());
-    children.whereType<Obstacle>().forEach((child) => child.removeFromParent());
-
-    // Reset score
-    score = 0;
-    scoreText.text = 'Score: 0';
-
-    // Reset timers
-    gameTime = 0.0;
-    itemSpawnTime = 0.0;
-    obstacleSpawnTime = 0.0;
-
-    // Reset player position
-    player.position = size / 2;
-    player.targetPosition = null;
-  }
-}
-
-// Player component
-class Player extends CircleComponent with CollisionCallbacks, HasGameRef<CollectorGame> {
-  final double speed = 300;
-  Vector2? targetPosition;
-
-  Player() : super(
-    radius: 25,
-    paint: Paint()..color = Colors.blue,
-  ) {
-    add(CircleHitbox());
-  }
-
-  @override
-  Future<void> onLoad() async {
-    super.onLoad();
-    position = gameRef.size / 2;
-    anchor = Anchor.center;
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-
-    // Move player towards target position if set
-    if (targetPosition != null) {
-      final direction = targetPosition! - position;
-      if (direction.length > 5) { // If not close enough to target
-        direction.normalize();
-        position += direction * speed * dt;
-      } else {
-        targetPosition = null; // Reached the target
+      // If ground is off-screen to the left, move it to the right
+      if (ground.position.x < -ground.size.x) {
+        ground.position.x += grounds.length * ground.size.x;
       }
     }
 
-    // Keep player within game bounds
-    position.clamp(
-      Vector2(radius, radius),
-      gameRef.size - Vector2(radius, radius),
+    // Update trees for infinite scrolling
+    for (final tree in trees) {
+      tree.position.x -= speed * dt;
+
+      // If tree is off-screen to the left, move it to the right
+      if (tree.position.x < -100) {
+        tree.position.x += size.x + 800; // Reposition tree to the right
+      }
+    }
+  }
+
+  @override
+  void onTap() {
+    bird.jump();
+  }
+
+  // @override
+  // bool onKeyEvent(RawKeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+  //   if (event is RawKeyDownEvent) {
+  //     if (event.logicalKey == LogicalKeyboardKey.space) {
+  //       bird.jump();
+  //       return true;
+  //     }
+  //   }
+  //   return super.onKeyEvent(event, keysPressed);
+  // }
+}
+
+class Bird extends SpriteAnimationComponent with HasGameRef<BirdGame> {
+  // Bird physics
+  double speedY = 0;
+  final double gravity = 10;
+  final double jumpForce = -300;
+
+  Bird({required SpriteAnimation animation})
+      : super(
+    animation: animation,
+    position: Vector2(100, 200),
+    size: Vector2(60, 60),
+    anchor: Anchor.center,
+  );
+
+  void jump() {
+    speedY = jumpForce;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    // Apply gravity
+    speedY += gravity;
+    position.y += speedY * dt;
+
+    // Simple bounds checking to keep bird on screen
+    if (position.y > gameRef.size.y - 130) {
+      position.y = gameRef.size.y - 130;
+      speedY = 0;
+    }
+
+    if (position.y < 30) {
+      position.y = 30;
+      speedY = 0;
+    }
+
+    // Tilt the bird based on velocity
+    angle = speedY * 0.003;
+  }
+}
+
+class Ground extends PositionComponent {
+  final Paint _paint = Paint()..color = const Color(0xFF8B4513); // Brown color
+
+  Ground({required Vector2 position, required Vector2 size})
+      : super(
+    position: position,
+    size: size,
+  );
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      _paint,
     );
   }
-
-  void moveTo(Vector2 target) {
-    targetPosition = target;
-  }
 }
 
-// Collectible item component
-class Collectible extends CircleComponent with CollisionCallbacks, HasGameRef<CollectorGame> {
-  Collectible() : super(
-    radius: 15,
-    paint: Paint()..color = Colors.green,
-  ) {
-    add(CircleHitbox());
-  }
+class Tree extends PositionComponent {
+  final Paint _trunkPaint = Paint()..color = const Color(0xFF8B4513); // Brown
+  final Paint _leavesPaint = Paint()..color = const Color(0xFF228B22); // Forest green
+
+  Tree({required Vector2 position})
+      : super(
+    position: position,
+    size: Vector2(80, 150),
+    anchor: Anchor.bottomCenter,
+  );
 
   @override
-  Future<void> onLoad() async {
-    super.onLoad();
-    anchor = Anchor.center;
-  }
+  void render(Canvas canvas) {
+    // Draw trunk
+    canvas.drawRect(
+      Rect.fromLTWH(size.x / 2 - 10, size.y - 100, 20, 100),
+      _trunkPaint,
+    );
 
-  @override
-  void onCollisionStart(
-      Set<Vector2> intersectionPoints,
-      PositionComponent other
-      ) {
-    super.onCollisionStart(intersectionPoints, other);
-
-    if (other is Player) {
-      gameRef.increaseScore();
-      removeFromParent();
-    }
-  }
-}
-
-// Obstacle component
-class Obstacle extends CircleComponent with CollisionCallbacks, HasGameRef<CollectorGame> {
-  Obstacle() : super(
-    radius: 20,
-    paint: Paint()..color = Colors.red,
-  ) {
-    add(CircleHitbox());
-  }
-
-  @override
-  Future<void> onLoad() async {
-    super.onLoad();
-    anchor = Anchor.center;
-  }
-
-  @override
-  void onCollisionStart(
-      Set<Vector2> intersectionPoints,
-      PositionComponent other
-      ) {
-    super.onCollisionStart(intersectionPoints, other);
-
-    if (other is Player) {
-      gameRef.overlays.add('gameOver');
-      gameRef.pauseEngine();
-    }
+    // Draw leaves (circular shape)
+    canvas.drawCircle(
+      Offset(size.x / 2, size.y - 100),
+      40,
+      _leavesPaint,
+    );
   }
 }
