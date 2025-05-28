@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
@@ -18,14 +19,41 @@ void main() {
     runApp(
       GameWidget(
         game: BirdGame(),
+        overlayBuilderMap: {
+          'GameOver': (context, game) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Game Over',
+                      style: TextStyle(fontSize: 32, color: Colors.white)),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      (game as BirdGame).resumeGame();
+                    },
+                    child: const Text('Restart'),
+                  ),
+                ],
+              ),
+            );
+          },
+        },
       ),
     );
   });
 }
 
-class BirdGame extends FlameGame with TapDetector, KeyboardEvents {
+class BirdGame extends FlameGame
+    with
+        TapDetector,
+        KeyboardEvents,
+        HasCollisionDetection,
+        MultiTouchDragDetector {
   // Bird component
   late Bird bird;
+  bool isDraggingBird = false;
+  final Map<int, String> activePointers = {}; // pointerId -> 'drag' or 'poop'
 
   // Background components
   late List<Street> grounds = [];
@@ -37,6 +65,44 @@ class BirdGame extends FlameGame with TapDetector, KeyboardEvents {
 
   // Game variables
   double speed = 120;
+
+  @override
+  void onDragStart(int pointerId, DragStartInfo info) {
+    final gamePosition = info.eventPosition.global;
+
+    if (gamePosition.x < size.x / 2) {
+      // Left side -> drag
+      activePointers[pointerId] = 'drag';
+      bird.startDragging();
+    } else {
+      // Right side -> poop
+      activePointers[pointerId] = 'poop';
+      bird.poop();
+    }
+  }
+
+  @override
+  void onDragUpdate(int pointerId, DragUpdateInfo info) {
+    if (activePointers[pointerId] == 'drag') {
+      bird.position += info.delta.global;
+    }
+  }
+
+  @override
+  void onDragEnd(int pointerId, DragEndInfo info) {
+    if (activePointers[pointerId] == 'drag') {
+      bird.stopDragging();
+    }
+    activePointers.remove(pointerId);
+  }
+
+  @override
+  void onDragCancel(int pointerId) {
+    if (activePointers[pointerId] == 'drag') {
+      bird.stopDragging();
+    }
+    activePointers.remove(pointerId);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -88,7 +154,7 @@ class BirdGame extends FlameGame with TapDetector, KeyboardEvents {
     // Add bird component to game
     bird = Bird(
       animation: birdAnimation,
-      position: Vector2(100, size.y / 2 - 150),
+      position: Vector2(size.x * 0.2, size.y * 0.3),
     );
     add(bird);
 
@@ -114,7 +180,8 @@ class BirdGame extends FlameGame with TapDetector, KeyboardEvents {
       position: Vector2(size.x + 100, laneY),
       size: Vector2(80, 40),
       color: Colors.primaries[random.nextInt(Colors.primaries.length)],
-      speed: 150,
+      speed: 120 + random.nextDouble() * 100,
+      // Random speed between 120 and 170
       laneList: laneCars,
     );
 
@@ -150,7 +217,53 @@ class BirdGame extends FlameGame with TapDetector, KeyboardEvents {
 
   @override
   void onTap() {
-    bird.jump();
+    // bird.jump();
+    bird.poop();
+  }
+
+  @override
+  void onTapDown(TapDownInfo info) {
+    if (info.eventPosition.global.x >= size.x / 2) {
+      bird.poop();
+    }
+  }
+
+  void gameOver() {
+    pauseEngine();
+    overlays.add('GameOver');
+  }
+
+  void resumeGame() {
+    // Reset bird
+    bird.position = Vector2(size.x * 0.2, size.y * 0.3);
+    bird.speedY = 0;
+
+    // Clear cars
+    for (final car in topLaneCars) {
+      car.removeFromParent();
+    }
+    for (final car in bottomLaneCars) {
+      car.removeFromParent();
+    }
+    topLaneCars.clear();
+    bottomLaneCars.clear();
+
+    // Reset background positions
+    for (int i = 0; i < grounds.length; i++) {
+      grounds[i].position = Vector2(i * size.x, size.y / 2);
+    }
+
+    for (int i = 0; i < trees.length; i++) {
+      trees[i].position = Vector2(
+        i * 300 + 200 + (i % 2) * 100,
+        size.y - 100 - 150,
+      );
+    }
+
+    // Restart the game
+    carSpawnTimer.start();
+    overlays.remove('GameOver');
+    resumeEngine();
   }
 
 // @override

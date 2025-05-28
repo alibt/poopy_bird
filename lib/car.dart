@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:poopy_bird/poop.dart';
 
-class Car extends PositionComponent {
+class Car extends PositionComponent with CollisionCallbacks {
   final double speed;
   final List<Car> laneList;
 
@@ -22,6 +24,7 @@ class Car extends PositionComponent {
   Future<void> onLoad() async {
     await super.onLoad();
 
+    add(RectangleHitbox()..collisionType = CollisionType.passive);
     body = SpriteComponent()
       ..sprite = await Sprite.load('car-body.png')
       ..size = size
@@ -62,8 +65,17 @@ class Car extends PositionComponent {
       }
     }
 
+    /// Tire rotation based on speed
     final rotationAmount = speed * dt / 10;
     frontTire.angle -= rotationAmount;
     rearTire.angle -= rotationAmount;
+  }
+
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    if (other is Poop) {
+      body.removeFromParent();
+    }
+    super.onCollision(intersectionPoints, other);
   }
 }
