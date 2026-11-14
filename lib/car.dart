@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +6,10 @@ import 'package:poopy_bird/poop.dart';
 class Car extends PositionComponent with CollisionCallbacks {
   final double speed;
   final List<Car> laneList;
+  final void Function()? onMissed;
+
+  bool wasHit = false;
+  bool _missedReported = false;
 
   late SpriteComponent body;
   late SpriteComponent frontTire;
@@ -18,6 +21,7 @@ class Car extends PositionComponent with CollisionCallbacks {
     required this.laneList,
     this.speed = 120,
     Color color = Colors.red,
+    this.onMissed,
   }) : super(position: position, size: size);
 
   @override
@@ -25,6 +29,7 @@ class Car extends PositionComponent with CollisionCallbacks {
     await super.onLoad();
 
     add(RectangleHitbox()..collisionType = CollisionType.passive);
+
     body = SpriteComponent()
       ..sprite = await Sprite.load('car-body.png')
       ..size = size
@@ -53,27 +58,36 @@ class Car extends PositionComponent with CollisionCallbacks {
     super.update(dt);
     position.x -= speed * dt;
 
-    if (position.x + size.x < 0) {
-      final lastCar = laneList.lastWhere((c) => c != this, orElse: () => this);
+    // Tire rotation based on speed
+    final rotationAmount = speed * dt / 10;
+    frontTire.angle -= rotationAmount;
+    rearTire.angle -= rotationAmount;
 
+    if (position.x + size.x < 0) {
+      // Report a miss if car was never hit and we haven't reported yet
+      if (!wasHit && !_missedReported) {
+        _missedReported = true;
+        onMissed?.call();
+      }
+
+      final lastCar = laneList.lastWhere((c) => c != this, orElse: () => this);
       final safeToReset = lastCar == this || lastCar.position.x < size.x - 250;
 
       if (safeToReset) {
+        // Reset state for the recycled car
+        wasHit = false;
+        _missedReported = false;
         position.x = size.x + 100;
       } else {
         position.x = -size.x;
       }
     }
-
-    /// Tire rotation based on speed
-    final rotationAmount = speed * dt / 10;
-    frontTire.angle -= rotationAmount;
-    rearTire.angle -= rotationAmount;
   }
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     if (other is Poop) {
+      wasHit = true;
       body.removeFromParent();
     }
     super.onCollision(intersectionPoints, other);

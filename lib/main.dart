@@ -1,15 +1,15 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:poopy_bird/bird.dart';
 import 'package:poopy_bird/car.dart';
 import 'package:poopy_bird/ground.dart';
 import 'package:poopy_bird/tree.dart';
+// shared_preferences removed — high score is in-memory until Google Maven
+// is reachable from this network and the package can be re-added.;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,17 +21,32 @@ void main() {
         game: BirdGame(),
         overlayBuilderMap: {
           'GameOver': (context, game) {
+            final g = game as BirdGame;
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Game Over',
-                      style: TextStyle(fontSize: 32, color: Colors.white)),
+                  Text(
+                    g.diedToRage ? 'THE CARS ARE ANGRY!' : 'Game Over',
+                    style: TextStyle(
+                      fontSize: 32,
+                      color: g.diedToRage ? Colors.redAccent : Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Score: ${g.score}',
+                    style: const TextStyle(fontSize: 24, color: Colors.yellowAccent),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Best: ${g.highScore}',
+                    style: const TextStyle(fontSize: 18, color: Colors.white70),
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: () {
-                      (game as BirdGame).resumeGame();
-                    },
+                    onPressed: () => g.resumeGame(),
                     child: const Text('Restart'),
                   ),
                 ],
@@ -46,120 +61,179 @@ void main() {
 
 class BirdGame extends FlameGame
     with
-        TapDetector,
+        TapCallbacks,
         KeyboardEvents,
         HasCollisionDetection,
         MultiTouchDragDetector {
-  // Bird component
+  // Bird
   late Bird bird;
-  bool isDraggingBird = false;
-  final Map<int, String> activePointers = {}; // pointerId -> 'drag' or 'poop'
 
-  // Background components
+  // Background
   late List<Street> grounds = [];
   late List<Tree> trees = [];
 
+  // Cars
   final List<Car> topLaneCars = [];
   final List<Car> bottomLaneCars = [];
   late Timer carSpawnTimer;
 
-  // Game variables
+  // Game speed
   double speed = 120;
 
-  @override
-  void onDragStart(int pointerId, DragStartInfo info) {
-    final gamePosition = info.eventPosition.global;
+  // Score
+  int score = 0;
+  int highScore = 0;
+  late TextComponent _scoreText;
+  late TextComponent _highScoreText;
 
-    if (gamePosition.x < size.x / 2) {
-      // Left side -> drag
-      activePointers[pointerId] = 'drag';
-      bird.startDragging();
-    } else {
-      // Right side -> poop
-      activePointers[pointerId] = 'poop';
-      bird.poop();
-    }
-  }
+  // Rage meter (0.0 – 1.0). Fills on missed cars, drains on poop hits.
+  double _rageMeter = 0.0;
+  static const double _rageFillPerMiss = 0.2;   // 5 misses = game over
+  static const double _rageDrainPerHit = 0.1;
+  late RectangleComponent _rageBarFill;
 
-  @override
-  void onDragUpdate(int pointerId, DragUpdateInfo info) {
-    if (activePointers[pointerId] == 'drag') {
-      bird.position += info.delta.global;
-    }
-  }
-
-  @override
-  void onDragEnd(int pointerId, DragEndInfo info) {
-    if (activePointers[pointerId] == 'drag') {
-      bird.stopDragging();
-    }
-    activePointers.remove(pointerId);
-  }
-
-  @override
-  void onDragCancel(int pointerId) {
-    if (activePointers[pointerId] == 'drag') {
-      bird.stopDragging();
-    }
-    activePointers.remove(pointerId);
-  }
+  // Game-over cause
+  bool diedToRage = false;
 
   @override
   Future<void> onLoad() async {
+    _loadHighScore();
+
     carSpawnTimer = Timer(2, repeat: true, onTick: spawnCar);
     carSpawnTimer.start();
 
-    // Load bird sprite frames for animation
-    final frame1 = await Sprite.load('frame-1.png');
-    final frame2 = await Sprite.load('frame-2.png');
-    final frame3 = await Sprite.load('frame-3.png');
-    final frame4 = await Sprite.load('frame-4.png');
-    final frame5 = await Sprite.load('frame-5.png');
-    final frame6 = await Sprite.load('frame-6.png');
-    final frame7 = await Sprite.load('frame-7.png');
-    final frame8 = await Sprite.load('frame-8.png');
+    // Bird animation frames
+    final frames = await Future.wait([
+      for (int i = 1; i <= 8; i++) Sprite.load('frame-$i.png'),
+    ]);
+    final birdAnimation = SpriteAnimation.spriteList(frames, stepTime: 0.1);
 
-    // Create sprite animation for bird
-    final birdAnimation = SpriteAnimation.spriteList(
-      [frame1, frame2, frame3, frame4, frame5, frame6, frame7, frame8],
-      stepTime: 0.1, // time between frames
-    );
-
-    // Initialize background - sky is the game background color
-    // camera. = const Color(0xFF87CEEB); // Sky blue color
-    // camera.world?.debugColor = const Color(0xFF87CEEB);
-
-    // Add ground components for infinite scrolling
+    // Ground tiles
     for (int i = 0; i < 5; i++) {
       final street = Street(
-        position: Vector2(i * size.x, (size.y / 2)),
+        position: Vector2(i * size.x, size.y / 2),
         size: Vector2(size.x, 200),
       );
       grounds.add(street);
       add(street);
     }
 
-    // Add some trees
+    // Trees
     for (int i = 0; i < 6; i++) {
       final tree = Tree(
-        position: Vector2(
-          i * 300 + 200 + (i % 2) * 100,
-          size.y - 100 - 150,
-        ),
+        position: Vector2(i * 300 + 200 + (i % 2) * 100, size.y - 250),
       );
       trees.add(tree);
       add(tree);
     }
 
-    // Add bird component to game
+    // Bird
     bird = Bird(
       animation: birdAnimation,
       position: Vector2(size.x * 0.2, size.y * 0.3),
     );
     add(bird);
 
+    // --- UI (added last so it renders on top) ---
+
+    // Rage bar background (full width, 10px tall)
+    add(RectangleComponent(
+      position: Vector2.zero(),
+      size: Vector2(size.x, 10),
+      paint: Paint()..color = const Color(0x44220000),
+    ));
+
+    // Rage bar fill
+    _rageBarFill = RectangleComponent(
+      position: Vector2.zero(),
+      size: Vector2(0, 10),
+      paint: Paint()..color = const Color(0xFFFF2200),
+    );
+    add(_rageBarFill);
+
+    // Rage label
+    add(TextComponent(
+      text: 'RAGE',
+      position: Vector2(8, 1),
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          color: Color(0xFFFF6644),
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          shadows: [Shadow(blurRadius: 2, color: Colors.black)],
+        ),
+      ),
+    ));
+
+    // Score (top-left)
+    _scoreText = TextComponent(
+      text: 'Score: 0',
+      position: Vector2(16, 14),
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+        ),
+      ),
+    );
+    add(_scoreText);
+
+    // High score (top-right)
+    _highScoreText = TextComponent(
+      text: 'Best: $highScore',
+      position: Vector2(size.x - 16, 14),
+      anchor: Anchor.topRight,
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 16,
+          shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+        ),
+      ),
+    );
+    add(_highScoreText);
+
     return super.onLoad();
   }
+
+  // ─── Score ────────────────────────────────────────────────────────────────
+
+  void addScore(int points) {
+    score += points;
+    _scoreText.text = 'Score: $score';
+  }
+
+  // High score is kept in-memory (persists within the app session).
+  // Persistence via shared_preferences can be re-added once Google Maven
+  // is accessible from this network.
+  void _loadHighScore() {
+    highScore = 0;
+  }
+
+  void _saveHighScore() {
+    if (score > highScore) highScore = score;
+  }
+
+  // ─── Rage meter ───────────────────────────────────────────────────────────
+
+  void onCarMissed() {
+    _rageMeter = min(1.0, _rageMeter + _rageFillPerMiss);
+    _rageBarFill.size.x = size.x * _rageMeter;
+    if (_rageMeter >= 1.0) {
+      diedToRage = true;
+      gameOver();
+    }
+  }
+
+  void onPoopHitCar() {
+    addScore(50);
+    _rageMeter = max(0.0, _rageMeter - _rageDrainPerHit);
+    _rageBarFill.size.x = size.x * _rageMeter;
+  }
+
+  // ─── Spawning ─────────────────────────────────────────────────────────────
 
   void spawnCar() {
     final random = Random();
@@ -167,113 +241,111 @@ class BirdGame extends FlameGame
     final topLaneY = streetTop + 40;
     final bottomLaneY = streetTop + 120;
     final laneY = random.nextBool() ? topLaneY : bottomLaneY;
-
     final laneCars = laneY == topLaneY ? topLaneCars : bottomLaneCars;
 
-    // Don't spawn if the last car is too close
-    if (laneCars.isNotEmpty) {
-      final lastCar = laneCars.last;
-      if (lastCar.position.x > size.x - 250) return;
-    }
+    if (laneCars.isNotEmpty && laneCars.last.position.x > size.x - 250) return;
 
     final car = Car(
       position: Vector2(size.x + 100, laneY),
       size: Vector2(80, 40),
       color: Colors.primaries[random.nextInt(Colors.primaries.length)],
       speed: 120 + random.nextDouble() * 100,
-      // Random speed between 120 and 170
       laneList: laneCars,
+      onMissed: onCarMissed,
     );
 
     laneCars.add(car);
     add(car);
   }
 
+  // ─── Game loop ────────────────────────────────────────────────────────────
+
   @override
   void update(double dt) {
     super.update(dt);
     carSpawnTimer.update(dt);
 
-    // Update grounds for infinite scrolling
+    // Distance-based score
+    addScore((speed * dt / 10).round());
+
     for (final ground in grounds) {
       ground.position.x -= speed * dt;
-
-      // If ground is off-screen to the left, move it to the right
       if (ground.position.x < -ground.size.x) {
         ground.position.x += grounds.length * ground.size.x;
       }
     }
 
-    // Update trees for infinite scrolling
     for (final tree in trees) {
       tree.position.x -= speed * dt;
-
-      // If tree is off-screen to the left, move it to the right
       if (tree.position.x < -100) {
-        tree.position.x += size.x + 800; // Reposition tree to the right
+        tree.position.x += size.x + 800;
       }
     }
   }
 
-  @override
-  void onTap() {
-    // bird.jump();
-    bird.poop();
-  }
+  // ─── Input — Option A: left = flap, right = poop ─────────────────────────
 
   @override
-  void onTapDown(TapDownInfo info) {
-    if (info.eventPosition.global.x >= size.x / 2) {
+  void onDragStart(int pointerId, DragStartInfo info) {
+    final x = info.eventPosition.global.x;
+    if (x < size.x / 2) {
+      bird.jump();
+    } else {
       bird.poop();
     }
   }
 
+  // onDragUpdate and onDragCancel intentionally left as no-ops;
+  // bird movement is now physics-only.
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    final x = event.canvasPosition.x;
+    if (x < size.x / 2) {
+      bird.jump();
+    } else {
+      bird.poop();
+    }
+  }
+
+  // ─── Game state ───────────────────────────────────────────────────────────
+
   void gameOver() {
+    _saveHighScore(); // fire-and-forget
     pauseEngine();
     overlays.add('GameOver');
   }
 
   void resumeGame() {
+    // Reset state
+    score = 0;
+    diedToRage = false;
+    _rageMeter = 0.0;
+    _rageBarFill.size.x = 0;
+    _scoreText.text = 'Score: 0';
+    _highScoreText.text = 'Best: $highScore';
+
     // Reset bird
     bird.position = Vector2(size.x * 0.2, size.y * 0.3);
     bird.speedY = 0;
 
     // Clear cars
-    for (final car in topLaneCars) {
-      car.removeFromParent();
-    }
-    for (final car in bottomLaneCars) {
+    for (final car in [...topLaneCars, ...bottomLaneCars]) {
       car.removeFromParent();
     }
     topLaneCars.clear();
     bottomLaneCars.clear();
 
-    // Reset background positions
+    // Reset backgrounds
     for (int i = 0; i < grounds.length; i++) {
       grounds[i].position = Vector2(i * size.x, size.y / 2);
     }
-
     for (int i = 0; i < trees.length; i++) {
-      trees[i].position = Vector2(
-        i * 300 + 200 + (i % 2) * 100,
-        size.y - 100 - 150,
-      );
+      trees[i].position = Vector2(i * 300 + 200 + (i % 2) * 100, size.y - 250);
     }
 
-    // Restart the game
     carSpawnTimer.start();
     overlays.remove('GameOver');
     resumeEngine();
   }
-
-// @override
-// bool onKeyEvent(RawKeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-//   if (event is RawKeyDownEvent) {
-//     if (event.logicalKey == LogicalKeyboardKey.space) {
-//       bird.jump();
-//       return true;
-//     }
-//   }
-//   return super.onKeyEvent(event, keysPressed);
-// }
 }

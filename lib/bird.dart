@@ -1,16 +1,20 @@
-
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:poopy_bird/car.dart';
 import 'package:poopy_bird/main.dart';
 import 'package:poopy_bird/poop.dart';
 
-class Bird extends SpriteAnimationComponent with HasGameRef<BirdGame>, CollisionCallbacks {
+class Bird extends SpriteAnimationComponent with HasGameReference<BirdGame>, CollisionCallbacks {
   double speedY = 0;
-  final double gravity = 400; // More realistic gravity for Flame
+  final double gravity = 400;
+
+  // Poop cooldown
   final double poopCooldown = 0.5;
-  double timeSinceLastPoop = 0.0;
-  bool isBeingDragged = false;
+  double _timeSinceLastPoop = 0.5;
+
+  // Jump cooldown — prevents double-fire from onTapDown + onDragStart firing together
+  final double jumpCooldown = 0.15;
+  double _timeSinceLastJump = 0.15;
 
   Bird({
     required SpriteAnimation animation,
@@ -23,26 +27,18 @@ class Bird extends SpriteAnimationComponent with HasGameRef<BirdGame>, Collision
   );
 
   void jump() {
-    speedY = -300;
-  }
-
-  void poop() {
-    if (timeSinceLastPoop >= poopCooldown) {
-      final poop = Poop(
-        startPosition: position + Vector2(0, size.y / 2),
-      );
-      gameRef.add(poop);
-      timeSinceLastPoop = 0.0;
+    if (_timeSinceLastJump >= jumpCooldown) {
+      speedY = -300;
+      _timeSinceLastJump = 0;
     }
   }
 
-  void startDragging() {
-    isBeingDragged = true;
-    speedY = 0;
-  }
-
-  void stopDragging() {
-    isBeingDragged = false;
+  void poop() {
+    if (_timeSinceLastPoop >= poopCooldown) {
+      final p = Poop(startPosition: position + Vector2(0, size.y / 2));
+      game.add(p);
+      _timeSinceLastPoop = 0;
+    }
   }
 
   @override
@@ -55,24 +51,23 @@ class Bird extends SpriteAnimationComponent with HasGameRef<BirdGame>, Collision
   void update(double dt) {
     super.update(dt);
 
-    timeSinceLastPoop += dt;
+    _timeSinceLastPoop += dt;
+    _timeSinceLastJump += dt;
 
-    if (!isBeingDragged) {
-      speedY += gravity * dt;
-      position.y += speedY * dt;
-    }
+    // Gravity is always active — no more drag suspension
+    speedY += gravity * dt;
+    position.y += speedY * dt;
 
-    // Optional: keep bird inside screen bounds
     position.clamp(
       Vector2.zero() + size / 2,
-      gameRef.size - size / 2,
+      game.size - size / 2,
     );
   }
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     if (other is Car) {
-      gameRef.gameOver();
+      game.gameOver();
     }
     super.onCollision(intersectionPoints, other);
   }
