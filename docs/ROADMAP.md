@@ -139,15 +139,15 @@ Check the licence of the current placeholder art before any release; it will all
 ## Milestones
 
 ### M0 — Stabilise and restructure
-- [ ] Fix distance score never increasing (per-frame rounding to 0)
-- [ ] Splatted cars score once only and stay visibly splatted
-- [ ] Cars are removed off-screen instead of recycled (no invisible cars, no unbounded growth)
-- [ ] Cars in a lane never overlap; car art faces the direction of travel
-- [ ] Consistent road/lane/tree layout derived from screen size
-- [ ] Restructure into `game/`, `components/`, `systems/`, `ui/`; central `GameConfig`
-- [ ] Camera/world/viewport setup; HUD on the viewport
-- [ ] Keyboard controls for desktop/web testing
-- [ ] Unit tests (score, rage) and game-flow tests (splat, escape, crash, restart)
+- [x] Fix distance score never increasing (per-frame rounding to 0)
+- [x] Splatted cars score once only and stay visibly splatted
+- [x] Cars are removed off-screen instead of recycled (no invisible cars, no unbounded growth)
+- [x] Cars in a lane never overlap; car art faces the direction of travel
+- [x] Consistent road/lane/tree layout derived from screen size
+- [x] Restructure into `game/`, `components/`, `systems/`, `ui/`; central `GameConfig`
+- [x] Camera/world/viewport setup; HUD on the viewport
+- [x] Keyboard controls for desktop/web testing
+- [x] Unit tests (score, rage) and game-flow tests (splat, escape, crash, restart)
 
 ### M1 — Core feel
 - [ ] Poop inherits forward momentum; landing indicator

@@ -1,0 +1,47 @@
+import '../game/config.dart';
+
+/// Tracks the current run's score and the best score.
+///
+/// Distance is accumulated as a double and converted to points on read, so
+/// small per-frame increments are never lost to rounding.
+class ScoreTracker {
+  ScoreTracker({
+    this.pointsPerSplat = GameConfig.pointsPerSplat,
+    this.pixelsPerDistancePoint = GameConfig.pixelsPerDistancePoint,
+  });
+
+  final int pointsPerSplat;
+  final double pixelsPerDistancePoint;
+
+  int best = 0;
+  int carsSplatted = 0;
+
+  /// Whether the last finished run beat the previous best.
+  bool isNewBest = false;
+
+  int _splatPoints = 0;
+  double _distance = 0;
+
+  int get score => _splatPoints + (_distance / pixelsPerDistancePoint).floor();
+
+  void addDistance(double pixels) => _distance += pixels;
+
+  void registerSplat() {
+    carsSplatted++;
+    _splatPoints += pointsPerSplat;
+  }
+
+  /// Call once when a run ends.
+  void finishRun() {
+    isNewBest = score > best;
+    if (isNewBest) best = score;
+  }
+
+  /// Clears the current run. The best score is kept.
+  void reset() {
+    carsSplatted = 0;
+    _splatPoints = 0;
+    _distance = 0;
+    isNewBest = false;
+  }
+}
