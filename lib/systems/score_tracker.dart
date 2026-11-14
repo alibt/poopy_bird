@@ -26,9 +26,12 @@ class ScoreTracker {
 
   void addDistance(double pixels) => _distance += pixels;
 
-  void registerSplat() {
+  /// Records a splat and returns the points it earned.
+  int registerSplat({int multiplier = 1}) {
+    final points = pointsPerSplat * multiplier;
     carsSplatted++;
-    _splatPoints += pointsPerSplat;
+    _splatPoints += points;
+    return points;
   }
 
   /// Call once when a run ends.

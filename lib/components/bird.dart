@@ -6,6 +6,7 @@ import 'package:flame/components.dart';
 import '../game/config.dart';
 import '../game/poopy_bird_game.dart';
 import 'car.dart';
+import 'food_pickup.dart';
 import 'poop.dart';
 
 class Bird extends SpriteAnimationComponent
@@ -18,12 +19,15 @@ class Bird extends SpriteAnimationComponent
         );
 
   double velocityY = 0;
+
+  /// While true the bird poops whenever the cooldown allows (finger or key
+  /// held down).
+  bool holdingPoop = false;
+
   double _sinceFlap = GameConfig.flapCooldown;
-  double _sincePoop = GameConfig.poopCooldown;
+  double _sincePoop = double.infinity;
 
   Vector2 get spawnPoint => Vector2(game.size.x * 0.2, game.size.y * 0.3);
-
-  bool get canPoop => _sincePoop >= GameConfig.poopCooldown;
 
   @override
   Future<void> onLoad() async {
@@ -40,8 +44,9 @@ class Bird extends SpriteAnimationComponent
   void reset() {
     position = spawnPoint;
     velocityY = 0;
+    holdingPoop = false;
     _sinceFlap = GameConfig.flapCooldown;
-    _sincePoop = GameConfig.poopCooldown;
+    _sincePoop = double.infinity;
   }
 
   void flap() {
@@ -50,11 +55,25 @@ class Bird extends SpriteAnimationComponent
     _sinceFlap = 0;
   }
 
-  /// Drops a poop if the cooldown allows it. Returns the poop, or null.
+  /// Drops a poop if the cooldown and belly allow it. Returns the poop, or
+  /// null.
   Poop? poop() {
-    if (!canPoop) return null;
+    if (_sincePoop < game.belly.cooldown) return null;
+    final kind = game.belly.take();
+    if (kind == null) {
+      game.onBellyEmpty();
+      return null;
+    }
     _sincePoop = 0;
-    final poop = Poop(position: position + Vector2(0, size.y * 0.3));
+    final poop = Poop(
+      position: position + Vector2(0, size.y * 0.3),
+      kind: kind,
+      // A diving bird throws its poop harder.
+      velocityY: velocityY.clamp(
+        GameConfig.poopMinDropSpeed,
+        GameConfig.poopMaxDropSpeed,
+      ),
+    );
     game.world.add(poop);
     return poop;
   }
@@ -78,6 +97,8 @@ class Bird extends SpriteAnimationComponent
       position.y = bottom;
       velocityY = 0;
     }
+
+    if (holdingPoop) poop();
   }
 
   @override
@@ -86,6 +107,10 @@ class Bird extends SpriteAnimationComponent
     PositionComponent other,
   ) {
     super.onCollisionStart(intersectionPoints, other);
-    if (other is Car) game.gameOver(GameOverReason.crash);
+    if (other is Car) {
+      game.gameOver(GameOverReason.crash);
+    } else if (other is FoodPickup) {
+      game.onFoodEaten(other);
+    }
   }
 }

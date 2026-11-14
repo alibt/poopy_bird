@@ -46,7 +46,8 @@ class GameOverOverlay extends StatelessWidget {
               score.isNewBest ? 'New best!' : 'Best: ${score.best}',
               style: TextStyle(
                 fontSize: 18,
-                color: score.isNewBest ? Colors.lightGreenAccent : Colors.white70,
+                color:
+                    score.isNewBest ? Colors.lightGreenAccent : Colors.white70,
               ),
             ),
             const SizedBox(height: 20),

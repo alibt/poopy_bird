@@ -150,12 +150,13 @@ Check the licence of the current placeholder art before any release; it will all
 - [x] Unit tests (score, rage) and game-flow tests (splat, escape, crash, restart)
 
 ### M1 — Core feel
-- [ ] Poop inherits forward momentum; landing indicator
-- [ ] Splat effects (particles, squash), splatted car art state
-- [ ] Combo multiplier
-- [ ] Belly/ammo + food pickups
-- [ ] Parallax background layers
-- [ ] Difficulty ramp within a run
+- [x] Poop falls under gravity and inherits the bird's dive speed; landing shadow under the bird
+- [x] Splat effects: droplet particles, car squash, floating points, road splats on misses
+- [x] Combo multiplier (up to ×5; broken by a miss or a 2.5s pause)
+- [x] Belly/ammo (6 poops, slow digestion) + food pickups: berries, chili (rapid fire), burrito (big area poops)
+- [x] Hold the poop side (or key) to keep pooping
+- [x] Parallax background layers (clouds, far and near skyline)
+- [x] Difficulty ramp within a run (scroll speed, car speed, spawn rate over 3 minutes)
 
 ### M2 — Levels and menus
 - [ ] Level JSON format + loader + spawn timeline runner

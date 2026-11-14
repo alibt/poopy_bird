@@ -6,25 +6,27 @@ import '../game/config.dart';
 import '../game/poopy_bird_game.dart';
 import 'car.dart';
 
-/// Periodically sends cars in from the right, never letting cars in the same
-/// lane overlap.
+/// Sends cars in from the right at the current difficulty's rate, never
+/// letting cars in the same lane overlap.
 class CarSpawner extends Component with HasGameReference<PoopyBirdGame> {
   final Map<int, Car> _lastInLane = {};
-  late final TimerComponent _timer;
+  double _untilNext = 0;
 
   @override
-  Future<void> onLoad() async {
-    _timer = TimerComponent(
-      period: GameConfig.carSpawnInterval,
-      repeat: true,
-      onTick: trySpawn,
-    );
-    add(_timer);
-  }
+  Future<void> onLoad() async => reset();
 
   void reset() {
     _lastInLane.clear();
-    _timer.timer.reset();
+    _untilNext = game.difficulty.carSpawnInterval;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _untilNext -= dt;
+    if (_untilNext > 0) return;
+    _untilNext += game.difficulty.carSpawnInterval;
+    trySpawn();
   }
 
   /// Spawns a car in a random lane that has room. Returns null if every lane
@@ -40,8 +42,8 @@ class CarSpawner extends Component with HasGameReference<PoopyBirdGame> {
   }
 
   Car? _spawnInLane(int lane) {
-    final range = GameConfig.carMaxSpeed - GameConfig.carMinSpeed;
-    var speed = GameConfig.carMinSpeed + game.random.nextDouble() * range;
+    var speed = game.scrollSpeed +
+        game.random.nextDouble() * game.difficulty.carGroundSpeedMax;
 
     final ahead = _lastInLane[lane];
     if (ahead != null && !ahead.isRemoving && !ahead.isRemoved) {

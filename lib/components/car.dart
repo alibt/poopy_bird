@@ -1,7 +1,9 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 
 import '../game/poopy_bird_game.dart';
+import 'run_scoped.dart';
 import 'splat_mark.dart';
 
 /// The kinds of car that can appear. New variants (convertible, bus, police…)
@@ -27,7 +29,7 @@ enum CarType {
 /// A car driving right-to-left along a lane. Its position is the bottom-left
 /// corner, which sits on the lane's baseline.
 class Car extends PositionComponent
-    with HasGameReference<PoopyBirdGame>, CollisionCallbacks {
+    with HasGameReference<PoopyBirdGame>, CollisionCallbacks, RunScoped {
   Car({
     required this.type,
     required this.lane,
@@ -81,6 +83,10 @@ class Car extends PositionComponent
     add(RectangleHitbox(collisionType: CollisionType.passive));
   }
 
+  /// Centre of the roof, where splats land.
+  Vector2 get roofCenter =>
+      Vector2(position.x + size.x * 0.45, position.y - size.y);
+
   /// Marks the car as splatted. Returns false if it already was, so each car
   /// scores only once.
   bool splat() {
@@ -90,6 +96,12 @@ class Car extends PositionComponent
       position: Vector2(size.x * 0.45, size.y * 0.12),
       size: Vector2(size.x * 0.4, size.y * 0.3),
     ));
+    // Squash on impact. The car is anchored bottom-left, so it squashes
+    // down onto its wheels.
+    add(SequenceEffect([
+      ScaleEffect.to(Vector2(1.12, 0.82), EffectController(duration: 0.07)),
+      ScaleEffect.to(Vector2.all(1), EffectController(duration: 0.18)),
+    ]));
     return true;
   }
 
