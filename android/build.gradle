@@ -1,16 +1,18 @@
 allprojects {
     repositories {
+        // Flutter's artifact mirror (Chinese CDN) — serves the Flutter engine
+        // and all transitive AndroidX deps the embedding requires.
+        // Must be first so it is preferred over unreachable dl.google.com.
+        maven { url 'https://storage.flutter-io.cn/download.flutter.io' }
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
 }
 
-rootProject.buildDir = "../build"
+rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
-    project.evaluationDependsOn(":app")
 }
 
 tasks.register("clean", Delete) {
