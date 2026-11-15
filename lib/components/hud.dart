@@ -5,16 +5,21 @@ import 'package:flutter/material.dart'
     show Colors, FontWeight, Shadow, TextStyle;
 
 import '../game/poopy_bird_game.dart';
+import '../levels/level_definition.dart' show ObjectiveType;
 import 'effects.dart';
 
-/// Score, best score, rage bar, ammo, combo and power-up status. Lives on
-/// the camera viewport, so it uses screen coordinates.
+/// Score, rage bar, ammo, combo and power-up status, plus the timer and
+/// objectives in a level or the best score in Endless. Lives on the camera
+/// viewport, so it uses screen coordinates.
 class Hud extends PositionComponent with HasGameReference<PoopyBirdGame> {
   Hud() : super(priority: 100);
 
   static const double _barHeight = 10;
   static const double _pipRadius = 6;
   static const double _pipSpacing = 16;
+
+  /// Room kept free at the top-right for the Flutter pause button.
+  static const double _pauseButtonSpace = 64;
 
   /// How long the ammo row flashes red after trying to poop on empty.
   static const double _emptyFlashTime = 0.4;
@@ -23,11 +28,13 @@ class Hud extends PositionComponent with HasGameReference<PoopyBirdGame> {
   late final TextComponent _best;
   late final TextComponent _combo;
   late final TextComponent _powerUp;
+  late final TextComponent _objectives;
 
   int _shownScore = -1;
   int _shownBest = -1;
   int _shownCombo = -1;
   String _shownPowerUp = '';
+  String _shownObjectives = '';
   double _emptyFlash = 0;
 
   final Paint _rageBackground = Paint()..color = const Color(0x44220000);
@@ -73,7 +80,11 @@ class Hud extends PositionComponent with HasGameReference<PoopyBirdGame> {
       position: Vector2(16, 66),
       textRenderer: _text(14, const Color(0xFFFFAB40)),
     );
-    addAll([rageLabel, _score, _best, _combo, _powerUp]);
+    _objectives = TextComponent(
+      anchor: Anchor.topRight,
+      textRenderer: _text(13, Colors.white),
+    );
+    addAll([rageLabel, _score, _best, _combo, _powerUp, _objectives]);
   }
 
   /// Flash the ammo row to show the belly is empty.
@@ -83,7 +94,9 @@ class Hud extends PositionComponent with HasGameReference<PoopyBirdGame> {
   void update(double dt) {
     super.update(dt);
     _emptyFlash = (_emptyFlash - dt).clamp(0, _emptyFlashTime);
-    _best.position.setValues(game.size.x - 16, 14);
+    final right = game.size.x - _pauseButtonSpace;
+    _best.position.setValues(right, 14);
+    _objectives.position.setValues(right, 40);
     _combo.position.setValues(game.size.x / 2, 14);
 
     final score = game.score.score;
@@ -91,10 +104,31 @@ class Hud extends PositionComponent with HasGameReference<PoopyBirdGame> {
       _shownScore = score;
       _score.text = 'Score: $score';
     }
-    final best = game.score.best;
-    if (best != _shownBest) {
-      _shownBest = best;
-      _best.text = 'Best: $best';
+    final timeLeft = game.timeLeft;
+    if (timeLeft != null) {
+      // Levels: countdown instead of best score.
+      final seconds = timeLeft.ceil();
+      if (seconds != _shownBest) {
+        _shownBest = seconds;
+        _best.text =
+            '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+      }
+    } else {
+      final best = game.score.best;
+      if (best != _shownBest) {
+        _shownBest = best;
+        _best.text = 'Best: $best';
+      }
+    }
+    final tracker = game.objectives;
+    final objectives = [
+      for (var i = 0; i < tracker.objectives.length; i++)
+        '${tracker.isMet(i) && tracker.objectives[i].type != ObjectiveType.maxEscapes ? '✓' : '•'} '
+            '${tracker.objectives[i].description}  ${tracker.progressLabel(i)}',
+    ].join('\n');
+    if (objectives != _shownObjectives) {
+      _shownObjectives = objectives;
+      _objectives.text = objectives;
     }
     final combo = game.combo.count;
     if (combo != _shownCombo) {

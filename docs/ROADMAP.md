@@ -159,13 +159,16 @@ Check the licence of the current placeholder art before any release; it will all
 - [x] Difficulty ramp within a run (scroll speed, car speed, spawn rate over 3 minutes)
 
 ### M2 — Levels and menus
-- [ ] Level JSON format + loader + spawn timeline runner
-- [ ] Objectives and star calculation
-- [ ] World 1: 8 levels + boss
-- [ ] Main menu, world map, level select, level intro, pause, results screens
+- [x] Level JSON format + loader + spawn timeline runner (see [LEVELS.md](LEVELS.md))
+- [x] Objectives and star calculation
+- [x] World 1: 8 levels + boss (Car Wash Truck)
+- [x] Main menu, world map, level select, level intro, pause, results screens
+- [x] Unlock rules (levels in order, worlds after the previous world, Endless after World 1)
+- [x] Backend-ready seams: `LevelRepository`, `ProgressRepository`, JSON models, `LevelResult` per run
+- [ ] Playtest and tune World 1 star thresholds and difficulty
 
 ### M3 — Persistence and economy
-- [ ] Save system (progress, stars, coins, settings)
+- [ ] Save system (progress, stars, coins, settings): on-device `ProgressRepository`
 - [ ] Coins and rewards
 - [ ] Shop: upgrades + cosmetics
 - [ ] Ads + IAP integration plan (rewarded ads for coin bonus / continue)

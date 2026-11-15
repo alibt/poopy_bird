@@ -1,0 +1,54 @@
+{
+  "id": "w1_boss",
+  "version": 1,
+  "name": "The Car Wash",
+  "isBoss": true,
+  "endWhenObjectivesMet": true,
+  "description": "A car wash truck is cleaning up your work! It takes 8 poops, and its spray washes nearby cars clean. Don't fly into it.",
+  "timeLimit": 90,
+  "scrollSpeed": 120,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 8
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 90,
+      "interval": 2.6,
+      "groundSpeed": [
+        0,
+        40
+      ],
+      "cars": {
+        "sedan": 1
+      },
+      "lanes": [
+        0
+      ]
+    }
+  ],
+  "scriptedSpawns": [
+    {
+      "at": 3,
+      "car": "carWashTruck",
+      "lane": 1,
+      "groundSpeed": 25
+    }
+  ],
+  "objectives": [
+    {
+      "type": "defeatBoss"
+    }
+  ],
+  "stars": {
+    "two": 2500,
+    "three": 3500
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "w1_l6",
+  "version": 1,
+  "name": "Keep Calm",
+  "description": "The neighbourhood is tense. Don't let clean cars get away.",
+  "timeLimit": 55,
+  "scrollSpeed": 120,
+  "rageFillPerEscape": 0.22,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 6,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 55,
+      "interval": 2.2,
+      "groundSpeed": [
+        0,
+        60
+      ],
+      "cars": {
+        "sedan": 3,
+        "sportsCar": 1
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 12
+    },
+    {
+      "type": "maxEscapes",
+      "count": 4
+    }
+  ],
+  "stars": {
+    "two": 2000,
+    "three": 2800
+  }
+}

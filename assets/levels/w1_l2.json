@@ -1,0 +1,41 @@
+{
+  "id": "w1_l2",
+  "version": 1,
+  "name": "Morning Commute",
+  "description": "More cars on the way to work. Grab berries to refill.",
+  "timeLimit": 45,
+  "scrollSpeed": 115,
+  "rageFillPerEscape": 0.12,
+  "food": {
+    "types": [
+      "berries",
+      "chili"
+    ],
+    "minInterval": 7,
+    "maxInterval": 11
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 45,
+      "interval": 2.5,
+      "groundSpeed": [
+        0,
+        60
+      ],
+      "cars": {
+        "sedan": 1
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 8
+    }
+  ],
+  "stars": {
+    "two": 1300,
+    "three": 1900
+  }
+}

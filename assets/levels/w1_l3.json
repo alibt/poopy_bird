@@ -1,0 +1,45 @@
+{
+  "id": "w1_l3",
+  "version": 1,
+  "name": "Combo Crossing",
+  "description": "Splat cars in quick succession to build a combo.",
+  "timeLimit": 45,
+  "scrollSpeed": 120,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries",
+      "chili"
+    ],
+    "minInterval": 6,
+    "maxInterval": 10
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 45,
+      "interval": 2.0,
+      "groundSpeed": [
+        0,
+        60
+      ],
+      "cars": {
+        "sedan": 1
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 8
+    },
+    {
+      "type": "reachCombo",
+      "count": 3
+    }
+  ],
+  "stars": {
+    "two": 1500,
+    "three": 2200
+  }
+}

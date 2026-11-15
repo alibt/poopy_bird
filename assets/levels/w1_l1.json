@@ -1,0 +1,40 @@
+{
+  "id": "w1_l1",
+  "version": 1,
+  "name": "First Flight",
+  "description": "Quiet streets. Drop a poop just ahead of a car to hit it.",
+  "timeLimit": 40,
+  "scrollSpeed": 110,
+  "rageFillPerEscape": 0.12,
+  "food": {
+    "types": [
+      "berries"
+    ],
+    "minInterval": 8,
+    "maxInterval": 12
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 40,
+      "interval": 3.0,
+      "groundSpeed": [
+        0,
+        40
+      ],
+      "cars": {
+        "sedan": 1
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 5
+    }
+  ],
+  "stars": {
+    "two": 900,
+    "three": 1300
+  }
+}

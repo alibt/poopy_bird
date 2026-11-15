@@ -1,0 +1,56 @@
+{
+  "id": "w1_l7",
+  "version": 1,
+  "name": "Rush Hour",
+  "description": "Bumper to bumper. Keep that belly full.",
+  "timeLimit": 60,
+  "scrollSpeed": 130,
+  "rageFillPerEscape": 0.12,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 8
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 20,
+      "interval": 1.6,
+      "groundSpeed": [
+        10,
+        80
+      ],
+      "cars": {
+        "sedan": 4,
+        "sportsCar": 1
+      }
+    },
+    {
+      "from": 20,
+      "to": 60,
+      "interval": 1.3,
+      "groundSpeed": [
+        10,
+        90
+      ],
+      "cars": {
+        "sedan": 4,
+        "sportsCar": 1
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 20
+    }
+  ],
+  "stars": {
+    "two": 3000,
+    "three": 4200
+  }
+}

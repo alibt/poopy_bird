@@ -6,14 +6,13 @@ import '../game/config.dart';
 /// small per-frame increments are never lost to rounding.
 class ScoreTracker {
   ScoreTracker({
-    this.pointsPerSplat = GameConfig.pointsPerSplat,
     this.pixelsPerDistancePoint = GameConfig.pixelsPerDistancePoint,
+    this.best = 0,
   });
 
-  final int pointsPerSplat;
   final double pixelsPerDistancePoint;
 
-  int best = 0;
+  int best;
   int carsSplatted = 0;
 
   /// Whether the last finished run beat the previous best.
@@ -26,13 +25,18 @@ class ScoreTracker {
 
   void addDistance(double pixels) => _distance += pixels;
 
-  /// Records a splat and returns the points it earned.
-  int registerSplat({int multiplier = 1}) {
-    final points = pointsPerSplat * multiplier;
-    carsSplatted++;
+  /// Records a poop hit worth [basePoints] and returns the points earned.
+  int registerHit({required int basePoints, int multiplier = 1}) {
+    final points = basePoints * multiplier;
     _splatPoints += points;
     return points;
   }
+
+  /// Adds a bonus such as a boss reward.
+  void addBonus(int points) => _splatPoints += points;
+
+  /// Counts a car as fully splatted.
+  void registerCarSplatted() => carsSplatted++;
 
   /// Call once when a run ends.
   void finishRun() {

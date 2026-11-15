@@ -61,7 +61,8 @@ abstract final class GameConfig {
   static const double carGroundSpeedEnd = 160;
 
   // Scoring
-  static const int pointsPerSplat = 50;
+  /// Bonus for defeating a boss.
+  static const int bossBonus = 1000;
 
   /// Scrolled pixels needed to earn one distance point.
   static const double pixelsPerDistancePoint = 10;

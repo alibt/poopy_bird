@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 
 import '../game/config.dart';
 import '../game/poopy_bird_game.dart';
+import '../progress/level_result.dart';
 import 'car.dart';
 import 'food_pickup.dart';
 import 'poop.dart';
@@ -108,7 +109,7 @@ class Bird extends SpriteAnimationComponent
   ) {
     super.onCollisionStart(intersectionPoints, other);
     if (other is Car) {
-      game.gameOver(GameOverReason.crash);
+      game.finish(RunOutcome.crashed);
     } else if (other is FoodPickup) {
       game.onFoodEaten(other);
     }

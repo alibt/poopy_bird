@@ -1,0 +1,39 @@
+{
+  "worlds": [
+    {
+      "id": "w1",
+      "name": "Suburbs",
+      "levels": [
+        "w1_l1",
+        "w1_l2",
+        "w1_l3",
+        "w1_l4",
+        "w1_l5",
+        "w1_l6",
+        "w1_l7",
+        "w1_l8",
+        "w1_boss"
+      ]
+    },
+    {
+      "id": "w2",
+      "name": "Downtown",
+      "comingSoon": true
+    },
+    {
+      "id": "w3",
+      "name": "Highway",
+      "comingSoon": true
+    },
+    {
+      "id": "w4",
+      "name": "Beach Boardwalk",
+      "comingSoon": true
+    },
+    {
+      "id": "w5",
+      "name": "Night City",
+      "comingSoon": true
+    }
+  ]
+}

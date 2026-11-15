@@ -1,0 +1,62 @@
+{
+  "id": "w1_l4",
+  "version": 1,
+  "name": "Need for Speed",
+  "description": "Yellow sports cars are fast but worth double.",
+  "timeLimit": 50,
+  "scrollSpeed": 120,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries",
+      "chili"
+    ],
+    "minInterval": 6,
+    "maxInterval": 10
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 12,
+      "interval": 2.4,
+      "groundSpeed": [
+        0,
+        50
+      ],
+      "cars": {
+        "sedan": 1
+      }
+    },
+    {
+      "from": 12,
+      "to": 50,
+      "interval": 2.0,
+      "groundSpeed": [
+        0,
+        60
+      ],
+      "cars": {
+        "sedan": 3,
+        "sportsCar": 2
+      }
+    }
+  ],
+  "scriptedSpawns": [
+    {
+      "at": 8,
+      "car": "sportsCar",
+      "lane": 0
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 3,
+      "carType": "sportsCar"
+    }
+  ],
+  "stars": {
+    "two": 1800,
+    "three": 2600
+  }
+}

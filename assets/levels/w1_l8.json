@@ -1,0 +1,51 @@
+{
+  "id": "w1_l8",
+  "version": 1,
+  "name": "Suburban Showdown",
+  "description": "Everything you've learned, all at once.",
+  "timeLimit": 60,
+  "scrollSpeed": 135,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 8
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 60,
+      "interval": 1.4,
+      "groundSpeed": [
+        20,
+        100
+      ],
+      "cars": {
+        "sedan": 3,
+        "sportsCar": 2
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 18
+    },
+    {
+      "type": "reachCombo",
+      "count": 5
+    },
+    {
+      "type": "maxEscapes",
+      "count": 6
+    }
+  ],
+  "stars": {
+    "two": 3400,
+    "three": 4600
+  }
+}

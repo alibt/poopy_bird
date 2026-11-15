@@ -16,14 +16,15 @@ enum FoodType {
   /// Relative spawn chance.
   final int weight;
 
-  /// Picks a food type at random, respecting [weight]s. [roll] is in [0, 1).
-  static FoodType pick(double roll) {
-    final total = values.fold<int>(0, (sum, f) => sum + f.weight);
+  /// Picks a food type at random from [from] (default: all), respecting
+  /// [weight]s. [roll] is in [0, 1).
+  static FoodType pick(double roll, {List<FoodType> from = values}) {
+    final total = from.fold<int>(0, (sum, f) => sum + f.weight);
     var target = roll * total;
-    for (final food in values) {
+    for (final food in from) {
       target -= food.weight;
       if (target < 0) return food;
     }
-    return values.last;
+    return from.last;
   }
 }

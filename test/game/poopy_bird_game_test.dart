@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame_test/flame_test.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:poopy_bird/components/car.dart';
 import 'package:poopy_bird/components/effects.dart';
@@ -12,20 +11,19 @@ import 'package:poopy_bird/components/poop.dart';
 import 'package:poopy_bird/game/poopy_bird_game.dart';
 import 'package:poopy_bird/systems/belly.dart';
 import 'package:poopy_bird/systems/food.dart';
-import 'package:poopy_bird/ui/game_over_overlay.dart';
+import 'package:poopy_bird/progress/level_result.dart';
 
 const _frame = 1 / 60;
 
-/// Creates a seeded game with its overlays registered, as GameWidget would.
-PoopyBirdGame _createGame() {
-  final game = PoopyBirdGame(random: Random(42));
-  game.overlays.addEntry(GameOverOverlay.id, (_, __) => const SizedBox());
-  return game;
-}
+/// Creates a seeded Endless game.
+PoopyBirdGame _createGame() => PoopyBirdGame(random: Random(42));
 
-void _advance(PoopyBirdGame game, double seconds) {
+/// Steps the game frame by frame, letting newly added components (e.g.
+/// spawned cars, whose sprites load asynchronously) finish mounting.
+Future<void> _advance(PoopyBirdGame game, double seconds) async {
   for (var t = 0.0; t < seconds; t += _frame) {
     game.update(_frame);
+    await game.ready();
   }
 }
 
@@ -53,7 +51,7 @@ Future<void> _dropOn(
     kind: kind,
   ));
   await game.ready();
-  _advance(game, 0.3);
+  await _advance(game, 0.3);
 }
 
 void main() {
@@ -64,7 +62,7 @@ void main() {
       'distance score increases at 60fps',
       _createGame,
       (game) async {
-        _advance(game, 1);
+        await _advance(game, 1);
         expect(game.score.score, greaterThanOrEqualTo(11));
       },
     );
@@ -94,8 +92,8 @@ void main() {
           game.update(_frame);
           expect(car.isRemoving || car.isRemoved, isTrue);
         }
-        expect(game.isGameOver, isTrue);
-        expect(game.gameOverReason, GameOverReason.rage);
+        expect(game.isFinished, isTrue);
+        expect(game.outcome, RunOutcome.rageOut);
       },
     );
 
@@ -114,7 +112,7 @@ void main() {
       'crashing into a car ends the run and restart resets everything',
       _createGame,
       (game) async {
-        _advance(game, 0.5);
+        await _advance(game, 0.5);
         final birdPos = game.bird.position;
         final car = Car(
           type: CarType.sedan,
@@ -126,12 +124,12 @@ void main() {
         await game.ready();
         game.update(_frame);
 
-        expect(game.gameOverReason, GameOverReason.crash);
+        expect(game.outcome, RunOutcome.crashed);
         expect(game.score.best, greaterThan(0));
 
         game.restart();
         await game.ready();
-        expect(game.isGameOver, isFalse);
+        expect(game.isFinished, isFalse);
         expect(game.score.score, 0);
         expect(game.rage.value, 0);
         expect(game.world.children.whereType<Car>(), isEmpty);
@@ -165,7 +163,7 @@ void main() {
         await game.world
             .add(Poop(position: Vector2(700, game.poopGroundY - 30)));
         await game.ready();
-        _advance(game, 0.3);
+        await _advance(game, 0.3);
         expect(game.combo.count, 0);
         expect(game.world.children.whereType<RoadSplat>(), isNotEmpty);
       },
@@ -207,7 +205,7 @@ void main() {
         await game.ready();
         game.update(_frame);
         expect(game.belly.ammo, greaterThan(0));
-        _advance(game, 0.1);
+        await _advance(game, 0.1);
         expect(game.world.children.whereType<FoodPickup>(), isEmpty);
       },
     );
@@ -219,9 +217,9 @@ void main() {
         game.bird.removeFromParent();
         await game.ready();
         final start = game.scrollSpeed;
-        _advance(game, 30);
+        await _advance(game, 30);
         expect(game.scrollSpeed, greaterThan(start));
-        game.gameOver(GameOverReason.crash);
+        game.finish(RunOutcome.crashed);
         game.restart();
         expect(game.scrollSpeed, start);
       },
@@ -246,6 +244,7 @@ void main() {
 
         for (var i = 0; i < 120; i++) {
           game.update(_frame);
+          await game.ready();
           final recorder = PictureRecorder();
           game.render(Canvas(recorder));
           recorder.endRecording();
@@ -264,6 +263,7 @@ void main() {
         var maxCars = 0;
         for (var t = 0.0; t < 60; t += _frame) {
           game.update(_frame);
+          await game.ready();
           final cars = game.world.children.whereType<Car>().toList();
           maxCars = max(maxCars, cars.length);
           for (final lane in [0, 1]) {
@@ -278,7 +278,8 @@ void main() {
             }
           }
         }
-        expect(maxCars, lessThan(12));
+        expect(maxCars, inInclusiveRange(3, 12),
+            reason: "traffic should actually spawn, but stay bounded");
       },
     );
   });

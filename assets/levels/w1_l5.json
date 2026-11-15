@@ -1,0 +1,43 @@
+{
+  "id": "w1_l5",
+  "version": 1,
+  "name": "Hungry Bird",
+  "description": "Lots of food today. Burritos make big poops that splat every car nearby.",
+  "timeLimit": 50,
+  "scrollSpeed": 120,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 3,
+    "maxInterval": 5
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 50,
+      "interval": 1.6,
+      "groundSpeed": [
+        0,
+        70
+      ],
+      "cars": {
+        "sedan": 4,
+        "sportsCar": 1
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 15
+    }
+  ],
+  "stars": {
+    "two": 2200,
+    "three": 3200
+  }
+}

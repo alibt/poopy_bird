@@ -12,17 +12,24 @@ void main() {
       expect(score.score, 12);
     });
 
-    test('splats add points and are counted', () {
-      final score = ScoreTracker(pointsPerSplat: 50);
-      score
-        ..registerSplat()
-        ..registerSplat();
-      expect(score.score, 100);
-      expect(score.carsSplatted, 2);
+    test('hits add base points times the multiplier', () {
+      final score = ScoreTracker();
+      expect(score.registerHit(basePoints: 50), 50);
+      expect(score.registerHit(basePoints: 50, multiplier: 3), 150);
+      score.addBonus(1000);
+      expect(score.score, 1200);
+    });
+
+    test('splatted cars are counted separately from hits', () {
+      final score = ScoreTracker()
+        ..registerHit(basePoints: 100)
+        ..registerHit(basePoints: 100)
+        ..registerCarSplatted();
+      expect(score.carsSplatted, 1);
     });
 
     test('finishRun records a new best only when beaten', () {
-      final score = ScoreTracker(pointsPerSplat: 50)..registerSplat();
+      final score = ScoreTracker()..registerHit(basePoints: 50);
       score.finishRun();
       expect(score.best, 50);
       expect(score.isNewBest, isTrue);
@@ -36,7 +43,8 @@ void main() {
 
     test('reset clears the run but keeps the best score', () {
       final score = ScoreTracker()
-        ..registerSplat()
+        ..registerHit(basePoints: 50)
+        ..registerCarSplatted()
         ..addDistance(500)
         ..finishRun();
       final best = score.best;
