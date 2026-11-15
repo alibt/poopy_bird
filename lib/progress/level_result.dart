@@ -27,6 +27,7 @@ class LevelResult {
     required this.escapes,
     required this.durationSeconds,
     required this.finishedAt,
+    this.isBoss = false,
   });
 
   /// Level id, or [endlessId] for Endless runs.
@@ -40,6 +41,9 @@ class LevelResult {
   final int escapes;
   final double durationSeconds;
   final DateTime finishedAt;
+
+  /// Whether the level was a boss level (earns a first-clear bonus).
+  final bool isBoss;
 
   static const String endlessId = 'endless';
 
@@ -56,6 +60,7 @@ class LevelResult {
         escapes: json['escapes'] as int,
         durationSeconds: (json['durationSeconds'] as num).toDouble(),
         finishedAt: DateTime.parse(json['finishedAt'] as String),
+        isBoss: json['isBoss'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -69,5 +74,6 @@ class LevelResult {
         'escapes': escapes,
         'durationSeconds': durationSeconds,
         'finishedAt': finishedAt.toUtc().toIso8601String(),
+        'isBoss': isBoss,
       };
 }

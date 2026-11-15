@@ -102,6 +102,7 @@ class Car extends PositionComponent
     if (isSplatted) return false;
     hitsTaken++;
     final mark = SplatMark(
+      color: game.loadout.poopColor,
       position: splatPosition(hitsTaken),
       size: Vector2(min(size.x * 0.4, 40), min(size.y * 0.3, 18)),
     );

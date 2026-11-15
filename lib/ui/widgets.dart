@@ -183,3 +183,32 @@ class StarCount extends StatelessWidget {
     );
   }
 }
+
+const Color coinGold = Color(0xFFFFB300);
+
+/// "● 250" coin badge.
+class CoinCount extends StatelessWidget {
+  const CoinCount({super.key, required this.coins, this.size = 20});
+
+  final int coins;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.monetization_on_rounded, color: coinGold, size: size),
+        const SizedBox(width: 2),
+        Text(
+          '$coins',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: brandBrown,
+            fontSize: size * 0.8,
+          ),
+        ),
+      ],
+    );
+  }
+}

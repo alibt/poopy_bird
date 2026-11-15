@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../economy/catalog.dart';
+import '../economy/rewards.dart';
 import '../levels/level_definition.dart';
 import 'level_result.dart';
 
@@ -32,16 +34,54 @@ class LevelRecord {
       };
 }
 
-/// Everything the player has achieved. Immutable; [withResult] returns an
-/// updated copy. Serialised with [schemaVersion] so stored or synced data can
-/// be migrated.
-class PlayerProgress {
-  const PlayerProgress({this.levels = const {}, this.endlessBest = 0});
+/// Why a shop action was refused.
+enum ShopError { unknownItem, notEnoughCoins, maxedOut, alreadyOwned, notOwned }
 
-  static const int schemaVersion = 1;
+class ShopException implements Exception {
+  const ShopException(this.error);
+
+  final ShopError error;
+
+  @override
+  String toString() => 'ShopException(${error.name})';
+}
+
+/// Everything the player has achieved and owns. Immutable; every change
+/// returns an updated copy. Serialised with [schemaVersion] so stored or
+/// synced data can be migrated.
+///
+/// Coin changes go through named operations ([withResult], [buyUpgrade],
+/// [buyCosmetic], [withCoins]) so a backend can later replay or validate
+/// them instead of trusting a client-side balance.
+class PlayerProgress {
+  const PlayerProgress({
+    this.levels = const {},
+    this.endlessBest = 0,
+    this.coins = 0,
+    this.lifetimeCoins = 0,
+    this.upgrades = const {},
+    this.owned = const {},
+    this.equipped = const {},
+  });
+
+  /// 1: levels and endless best. 2: adds coins, upgrades and cosmetics.
+  static const int schemaVersion = 2;
 
   final Map<String, LevelRecord> levels;
   final int endlessBest;
+  final int coins;
+
+  /// Every coin ever earned, for achievements and analytics.
+  final int lifetimeCoins;
+
+  /// Upgrade id to tier bought.
+  final Map<String, int> upgrades;
+
+  /// Ids of bought cosmetics. Free cosmetics are always owned.
+  final Set<String> owned;
+
+  /// Cosmetic slot name to equipped cosmetic id.
+  final Map<String, String> equipped;
 
   LevelRecord recordFor(String levelId) =>
       levels[levelId] ?? const LevelRecord();
@@ -56,20 +96,98 @@ class PlayerProgress {
       world.levelIds.isNotEmpty &&
       world.levelIds.every((id) => recordFor(id).completed);
 
-  PlayerProgress withResult(LevelResult result) {
-    if (result.isEndless) {
-      return PlayerProgress(
-        levels: levels,
-        endlessBest: max(endlessBest, result.score),
+  int upgradeTier(UpgradeId id) => upgrades[id.id] ?? 0;
+
+  bool owns(String cosmeticId) {
+    final item = Catalog.cosmetic(cosmeticId);
+    return item != null && (item.isFree || owned.contains(cosmeticId));
+  }
+
+  String equippedIn(CosmeticSlot slot) {
+    final id = equipped[slot.name];
+    return id != null && owns(id) ? id : Catalog.defaultFor(slot).id;
+  }
+
+  /// What the next run is played with.
+  Loadout get loadout => Loadout(
+        upgrades: {
+          for (final id in UpgradeId.values)
+            if (upgradeTier(id) > 0) id: upgradeTier(id),
+        },
+        plumage: equippedIn(CosmeticSlot.plumage),
+        poop: equippedIn(CosmeticSlot.poop),
       );
+
+  PlayerProgress _copy({
+    Map<String, LevelRecord>? levels,
+    int? endlessBest,
+    int? coins,
+    int? lifetimeCoins,
+    Map<String, int>? upgrades,
+    Set<String>? owned,
+    Map<String, String>? equipped,
+  }) =>
+      PlayerProgress(
+        levels: levels ?? this.levels,
+        endlessBest: endlessBest ?? this.endlessBest,
+        coins: coins ?? this.coins,
+        lifetimeCoins: lifetimeCoins ?? this.lifetimeCoins,
+        upgrades: upgrades ?? this.upgrades,
+        owned: owned ?? this.owned,
+        equipped: equipped ?? this.equipped,
+      );
+
+  /// Records a finished run and pays its [RewardRules] reward.
+  PlayerProgress withResult(LevelResult result) {
+    final reward = RewardRules.forResult(result, this);
+    final paid = withCoins(reward.total);
+    if (result.isEndless) {
+      return paid._copy(endlessBest: max(endlessBest, result.score));
     }
-    return PlayerProgress(
-      levels: {
-        ...levels,
-        result.levelId: recordFor(result.levelId).merge(result)
-      },
-      endlessBest: endlessBest,
+    return paid._copy(levels: {
+      ...levels,
+      result.levelId: recordFor(result.levelId).merge(result),
+    });
+  }
+
+  /// Adds (or, if negative, removes) coins. Earnings count toward
+  /// [lifetimeCoins].
+  PlayerProgress withCoins(int amount) => _copy(
+        coins: max(0, coins + amount),
+        lifetimeCoins: lifetimeCoins + max(0, amount),
+      );
+
+  /// Buys the next tier of an upgrade.
+  PlayerProgress buyUpgrade(UpgradeId id) {
+    final tier = upgradeTier(id);
+    final cost = Catalog.upgrade(id).nextCost(tier);
+    if (cost == null) throw const ShopException(ShopError.maxedOut);
+    if (coins < cost) throw const ShopException(ShopError.notEnoughCoins);
+    return _copy(
+      coins: coins - cost,
+      upgrades: {...upgrades, id.id: tier + 1},
     );
+  }
+
+  /// Buys a cosmetic and equips it.
+  PlayerProgress buyCosmetic(String cosmeticId) {
+    final item = Catalog.cosmetic(cosmeticId);
+    if (item == null) throw const ShopException(ShopError.unknownItem);
+    if (owns(cosmeticId)) throw const ShopException(ShopError.alreadyOwned);
+    if (coins < item.price) {
+      throw const ShopException(ShopError.notEnoughCoins);
+    }
+    return _copy(
+      coins: coins - item.price,
+      owned: {...owned, cosmeticId},
+    ).equip(cosmeticId);
+  }
+
+  PlayerProgress equip(String cosmeticId) {
+    final item = Catalog.cosmetic(cosmeticId);
+    if (item == null) throw const ShopException(ShopError.unknownItem);
+    if (!owns(cosmeticId)) throw const ShopException(ShopError.notOwned);
+    return _copy(equipped: {...equipped, item.slot.name: cosmeticId});
   }
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) {
@@ -78,12 +196,30 @@ class PlayerProgress {
       throw FormatException(
           'Progress schema $version is newer than $schemaVersion');
     }
+    // Version 1 data simply lacks the economy fields; their defaults are
+    // the correct migration.
     return PlayerProgress(
       levels: {
         for (final e in (json['levels'] as Map<String, dynamic>? ?? {}).entries)
           e.key: LevelRecord.fromJson(e.value as Map<String, dynamic>),
       },
       endlessBest: json['endlessBest'] as int? ?? 0,
+      coins: json['coins'] as int? ?? 0,
+      lifetimeCoins: json['lifetimeCoins'] as int? ?? 0,
+      upgrades: {
+        for (final e
+            in (json['upgrades'] as Map<String, dynamic>? ?? {}).entries)
+          e.key: e.value as int,
+      },
+      owned: {
+        for (final id in json['owned'] as List<dynamic>? ?? const [])
+          id as String,
+      },
+      equipped: {
+        for (final e
+            in (json['equipped'] as Map<String, dynamic>? ?? {}).entries)
+          e.key: e.value as String,
+      },
     );
   }
 
@@ -91,6 +227,11 @@ class PlayerProgress {
         'schemaVersion': schemaVersion,
         'levels': {for (final e in levels.entries) e.key: e.value.toJson()},
         'endlessBest': endlessBest,
+        'coins': coins,
+        'lifetimeCoins': lifetimeCoins,
+        'upgrades': upgrades,
+        'owned': owned.toList()..sort(),
+        'equipped': equipped,
       };
 }
 

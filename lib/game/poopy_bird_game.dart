@@ -17,6 +17,7 @@ import '../components/landing_marker.dart';
 import '../components/poop.dart';
 import '../components/run_scoped.dart';
 import '../components/scenery.dart';
+import '../economy/catalog.dart';
 import '../levels/run_plan.dart';
 import '../progress/level_result.dart';
 import '../systems/belly.dart';
@@ -41,6 +42,7 @@ class PoopyBirdGame extends FlameGame
     RunPlan? plan,
     Random? random,
     int bestScore = 0,
+    this.loadout = const Loadout(),
     this.onRunFinished,
   })  : plan = plan ?? EndlessPlan(),
         random = random ?? Random(),
@@ -50,13 +52,22 @@ class PoopyBirdGame extends FlameGame
   final Random random;
   final ScoreTracker score;
 
+  /// Upgrades and cosmetics for this run.
+  final Loadout loadout;
+
   /// Called once when a run ends. The app layer stores the result; the game
   /// itself never touches storage or the network.
   final void Function(LevelResult result)? onRunFinished;
 
-  late final RageMeter rage = RageMeter(fillPerEscape: plan.rageFillPerEscape);
-  final ComboTracker combo = ComboTracker();
-  final Belly belly = Belly();
+  late final RageMeter rage =
+      RageMeter(fillPerEscape: plan.rageFillPerEscape * loadout.rageFillScale);
+  late final ComboTracker combo = ComboTracker(window: loadout.comboWindow);
+  late final Belly belly = Belly(
+    capacity: loadout.bellyCapacity,
+    digestionInterval: loadout.digestionInterval,
+    chiliDuration: loadout.chiliDuration,
+    burritoBigPoops: loadout.burritoBigPoops,
+  );
   late ObjectiveTracker objectives = ObjectiveTracker(plan.objectives);
 
   late final Bird bird;
@@ -109,6 +120,9 @@ class PoopyBirdGame extends FlameGame
       for (var i = 1; i <= 8; i++) loadSprite('frame-$i.png'),
     ]);
     bird = Bird(animation: SpriteAnimation.spriteList(frames, stepTime: 0.1));
+    if (loadout.birdHue != 0) {
+      bird.paint.colorFilter = hueRotation(loadout.birdHue);
+    }
     carSpawner = CarSpawner();
     foodSpawner = FoodSpawner();
     hud = Hud();
@@ -198,6 +212,7 @@ class PoopyBirdGame extends FlameGame
       escapes: objectives.escapes,
       durationSeconds: elapsed,
       finishedAt: DateTime.now().toUtc(),
+      isBoss: level?.isBoss ?? false,
     );
     pauseEngine();
     overlays.remove(GameOverlays.pauseButton);
@@ -259,6 +274,7 @@ class PoopyBirdGame extends FlameGame
     world.add(splatBurst(
       poop.position.clone(),
       random,
+      color: loadout.poopColor,
       count: poop.kind == PoopKind.big ? 28 : 12,
       power: poop.kind == PoopKind.big ? 1.6 : 1,
     ));
@@ -287,7 +303,8 @@ class PoopyBirdGame extends FlameGame
     objectives.onBossDefeated();
     score.addBonus(GameConfig.bossBonus);
     boss.speed *= 2.5;
-    world.add(splatBurst(boss.roofCenter, random, count: 60, power: 2));
+    world.add(splatBurst(boss.roofCenter, random,
+        color: loadout.poopColor, count: 60, power: 2));
     world.add(FloatingText(
       'BOSS DOWN!  +${GameConfig.bossBonus}',
       position: boss.roofCenter - Vector2(0, 40),
@@ -299,8 +316,13 @@ class PoopyBirdGame extends FlameGame
   void onPoopMissed(Poop poop) {
     if (isFinished) return;
     combo.registerMiss();
-    world.add(RoadSplat(position: poop.position.clone(), radius: poop.radius));
-    world.add(splatBurst(poop.position.clone(), random, count: 6, power: 0.6));
+    world.add(RoadSplat(
+      position: poop.position.clone(),
+      radius: poop.radius,
+      color: loadout.poopColor,
+    ));
+    world.add(splatBurst(poop.position.clone(), random,
+        color: loadout.poopColor, count: 6, power: 0.6));
   }
 
   void onCarEscaped(Car car) {

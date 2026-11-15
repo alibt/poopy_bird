@@ -15,10 +15,11 @@ const Color poopBrown = Color(0xFF6B4423);
 ParticleSystemComponent splatBurst(
   Vector2 position,
   Random random, {
+  Color color = poopBrown,
   int count = 12,
   double power = 1,
 }) {
-  final paint = Paint()..color = poopBrown;
+  final paint = Paint()..color = color;
   return ParticleSystemComponent(
     position: position,
     priority: 40,
@@ -88,8 +89,11 @@ class FloatingText extends PositionComponent with RunScoped {
 /// A poop that missed, left on the road. Scrolls with the road and fades.
 class RoadSplat extends SplatMark
     with HasGameReference<PoopyBirdGame>, RunScoped {
-  RoadSplat({required super.position, required double radius})
-      : super(size: Vector2(radius * 3, radius * 1.2));
+  RoadSplat({
+    required super.position,
+    required double radius,
+    super.color,
+  }) : super(size: Vector2(radius * 3, radius * 1.2));
 
   static const double _lifetime = 3;
   double _age = 0;

@@ -101,9 +101,9 @@ void main() {
 
   test('InMemoryProgressRepository records results', () async {
     final repository = InMemoryProgressRepository();
-    final updated = await repository.record(_result('a', stars: 2));
-    expect(updated.recordFor('a').bestStars, 2);
+    final recorded = await repository.record(_result('a', stars: 2));
+    expect(recorded.progress.recordFor('a').bestStars, 2);
     expect((await repository.load()).recordFor('a').bestStars, 2);
-    expect(repository.history, hasLength(1));
+    expect(await repository.pendingActions(), hasLength(1));
   });
 }

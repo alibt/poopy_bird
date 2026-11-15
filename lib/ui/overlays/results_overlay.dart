@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../economy/rewards.dart';
 
 import '../../game/poopy_bird_game.dart';
 import '../../progress/level_result.dart';
@@ -9,15 +12,23 @@ class ResultsOverlay extends StatelessWidget {
   const ResultsOverlay({
     super.key,
     required this.game,
+    required this.reward,
     required this.onQuit,
     this.onNext,
+    this.onDoubleCoins,
   });
 
   final PoopyBirdGame game;
+
+  /// Coins for this run, null while they are being stored.
+  final ValueListenable<RunReward?> reward;
   final VoidCallback onQuit;
 
   /// Null when there is no next level to go to.
   final VoidCallback? onNext;
+
+  /// Shows a rewarded ad to double the coins; null when no ad is available.
+  final Future<bool> Function(RunReward reward)? onDoubleCoins;
 
   String get _title {
     final level = game.plan.level;
@@ -102,7 +113,14 @@ class ResultsOverlay extends StatelessWidget {
                 style: const TextStyle(color: Colors.black54),
               ),
             ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<RunReward?>(
+            valueListenable: reward,
+            builder: (context, value, _) => value == null
+                ? const SizedBox(height: 28)
+                : _CoinsEarned(reward: value, onDouble: onDoubleCoins),
+          ),
+          const SizedBox(height: 10),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -118,6 +136,79 @@ class ResultsOverlay extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "+42 coins", with a button to double them by watching an ad.
+class _CoinsEarned extends StatefulWidget {
+  const _CoinsEarned({required this.reward, this.onDouble});
+
+  final RunReward reward;
+  final Future<bool> Function(RunReward reward)? onDouble;
+
+  @override
+  State<_CoinsEarned> createState() => _CoinsEarnedState();
+}
+
+class _CoinsEarnedState extends State<_CoinsEarned> {
+  bool _busy = false;
+  bool _doubled = false;
+
+  Future<void> _double() async {
+    setState(() => _busy = true);
+    final doubled = await widget.onDouble!(widget.reward);
+    if (mounted) {
+      setState(() {
+        _busy = false;
+        _doubled = doubled;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reward = widget.reward;
+    final total = reward.total * (_doubled ? 2 : 1);
+    final bonuses = [
+      if (reward.newStarCoins > 0) '${reward.newStarCoins} new stars',
+      if (reward.firstClearBonus > 0) '${reward.firstClearBonus} first clear',
+    ];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('+',
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.amber.shade900)),
+            CoinCount(coins: total, size: 28),
+            if (_doubled)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Text('x2!',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Colors.green.shade700)),
+              ),
+            if (widget.onDouble != null && reward.total > 0 && !_doubled) ...[
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
+                onPressed: _busy ? null : _double,
+                icon: const Icon(Icons.ondemand_video_rounded, size: 18),
+                label: Text(_busy ? '...' : 'Double it'),
+              ),
+            ],
+          ],
+        ),
+        if (bonuses.isNotEmpty)
+          Text('incl. ${bonuses.join(', ')}',
+              style: const TextStyle(fontSize: 12, color: Colors.black54)),
+      ],
     );
   }
 }

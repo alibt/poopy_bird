@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 
+import '../economy/catalog.dart';
+import '../economy/rewards.dart';
 import '../levels/level_definition.dart';
 import '../levels/level_repository.dart';
 import '../progress/level_result.dart';
 import '../progress/player_progress.dart';
+import '../monetization/ads.dart';
 import '../progress/progress_repository.dart';
 
 /// App-wide state for menus: the world list, the player's progress, and
@@ -12,10 +15,12 @@ class ProgressController extends ChangeNotifier {
   ProgressController({
     required this.levelRepository,
     required this.progressRepository,
+    this.ads = const NoAds(),
   });
 
   final LevelRepository levelRepository;
   final ProgressRepository progressRepository;
+  final RewardedAds ads;
 
   List<WorldDefinition> worlds = const [];
   PlayerProgress progress = const PlayerProgress();
@@ -31,8 +36,45 @@ class ProgressController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> record(LevelResult result) async {
-    progress = await progressRepository.record(result);
+  /// Stores a finished run and returns the coins it earned.
+  Future<RunReward> record(LevelResult result) async {
+    final recorded = await progressRepository.record(result);
+    progress = recorded.progress;
+    notifyListeners();
+    return recorded.reward;
+  }
+
+  /// Shows a rewarded ad and, if it was watched, pays [reward] again.
+  /// Returns whether the coins were doubled.
+  Future<bool> doubleRunCoins(RunReward reward, LevelResult result) async {
+    if (reward.total <= 0) return false;
+    if (!await ads.show(AdPlacement.doubleCoins)) return false;
+    await _update(progressRepository.grantCoins(
+      reward.total,
+      reason: '${AdPlacement.doubleCoins.id}:${result.levelId}:'
+          '${result.finishedAt.toIso8601String()}',
+    ));
+    return true;
+  }
+
+  /// Debug builds only: free coins for testing the shop.
+  Future<void> grantDebugCoins(int amount) {
+    assert(kDebugMode);
+    return _update(progressRepository.grantCoins(amount, reason: 'debug'));
+  }
+
+  /// Throws [ShopException] if the purchase isn't possible.
+  Future<void> buyUpgrade(UpgradeId id) =>
+      _update(progressRepository.buyUpgrade(id));
+
+  /// Throws [ShopException] if the purchase isn't possible.
+  Future<void> buyCosmetic(String id) =>
+      _update(progressRepository.buyCosmetic(id));
+
+  Future<void> equip(String id) => _update(progressRepository.equip(id));
+
+  Future<void> _update(Future<PlayerProgress> change) async {
+    progress = await change;
     notifyListeners();
   }
 

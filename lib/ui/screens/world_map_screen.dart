@@ -20,9 +20,16 @@ class WorldMapScreen extends StatelessWidget {
         children: [
           ScreenHeader(
             title: 'World Map',
-            trailing: StarCount(
-              earned: controller.progress.totalStars,
-              total: playableLevels * 3,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StarCount(
+                  earned: controller.progress.totalStars,
+                  total: playableLevels * 3,
+                ),
+                const SizedBox(width: 16),
+                CoinCount(coins: controller.progress.coins),
+              ],
             ),
           ),
           Expanded(

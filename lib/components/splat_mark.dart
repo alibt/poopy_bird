@@ -5,7 +5,10 @@ import 'package:flame/components.dart';
 /// A poop splat, drawn on a car roof or the road. Placeholder art until the
 /// Blender pipeline (M5) provides sprites.
 class SplatMark extends PositionComponent {
-  SplatMark({super.position, super.size}) : super(anchor: Anchor.center);
+  SplatMark({super.position, super.size, this.color = const Color(0xFF6B4423)})
+      : super(anchor: Anchor.center);
+
+  final Color color;
 
   /// 0 (invisible) to 1 (opaque).
   double opacity = 1;
@@ -15,7 +18,7 @@ class SplatMark extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    _brown.color = Color.fromRGBO(0x6B, 0x44, 0x23, opacity);
+    _brown.color = color.withValues(alpha: opacity);
     _highlight.color = Color.fromRGBO(255, 255, 255, 0.4 * opacity);
     final w = size.x;
     final h = size.y;

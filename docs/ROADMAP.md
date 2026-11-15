@@ -168,10 +168,11 @@ Check the licence of the current placeholder art before any release; it will all
 - [ ] Playtest and tune World 1 star thresholds and difficulty
 
 ### M3 — Persistence and economy
-- [ ] Save system (progress, stars, coins, settings): on-device `ProgressRepository`
-- [ ] Coins and rewards
-- [ ] Shop: upgrades + cosmetics
-- [ ] Ads + IAP integration plan (rewarded ads for coin bonus / continue)
+- [x] Save system (progress, stars, coins, upgrades, cosmetics): `LocalProgressRepository` on shared preferences, schema v2 with migration from v1, plus an action outbox for future backend sync
+- [x] Coins and rewards (`RewardRules`: score, win, new stars, first boss clear; shown on the results screen)
+- [x] Shop: 6 tiered upgrades + feather and poop cosmetics (placeholder tints until M5)
+- [x] Ads + IAP integration plan: [MONETIZATION.md](MONETIZATION.md); `RewardedAds` interface with a debug fake, plus a "Double it" button for run coins
+- [x] Android toolchain updated to Flutter 3.47's minimums (Gradle 8.14.3, AGP 8.11.1, Kotlin 2.2.20)
 
 ### M4 — Achievements, trophies, Endless
 - [ ] Achievement system + notifications
@@ -186,7 +187,7 @@ Check the licence of the current placeholder art before any release; it will all
 ### M6 — Polish
 - [ ] Music and SFX
 - [ ] Juice: screen shake, haptics, transitions
-- [ ] Tutorial level; settings screen
+- [ ] Tutorial level; settings screen (saved through the same `KeyValueStore`)
 
 ### M7 — Release
 - [ ] Real bundle id (replace `com.example.poopy_bird`), app icons, splash

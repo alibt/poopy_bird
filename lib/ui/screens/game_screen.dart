@@ -2,9 +2,12 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
+import '../../economy/rewards.dart';
 import '../../game/poopy_bird_game.dart';
 import '../../levels/level_definition.dart';
 import '../../levels/run_plan.dart';
+import '../../monetization/ads.dart';
+import '../../progress/level_result.dart';
 import '../overlays/level_intro_overlay.dart';
 import '../overlays/pause_overlays.dart';
 import '../overlays/results_overlay.dart';
@@ -23,6 +26,22 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   late final Future<PoopyBirdGame> _game = _createGame();
 
+  /// Coins paid for the last run; null until the run has been stored.
+  final ValueNotifier<RunReward?> _reward = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _reward.dispose();
+    super.dispose();
+  }
+
+  void _onRunFinished(LevelResult result) {
+    _reward.value = null;
+    AppScope.read(context).record(result).then((reward) {
+      if (mounted) _reward.value = reward;
+    });
+  }
+
   Future<PoopyBirdGame> _createGame() async {
     final controller = AppScope.read(context);
     final id = widget.levelId;
@@ -33,7 +52,8 @@ class _GameScreenState extends State<GameScreen> {
       bestScore: level == null
           ? controller.progress.endlessBest
           : controller.progress.recordFor(level.id).bestScore,
-      onRunFinished: controller.record,
+      loadout: controller.progress.loadout,
+      onRunFinished: _onRunFinished,
     );
   }
 
@@ -92,12 +112,18 @@ class _GameScreenState extends State<GameScreen> {
                 GameOverlays.pauseMenu: (_, g) =>
                     PauseMenuOverlay(game: g, onQuit: _quit),
                 GameOverlays.results: (context, g) {
+                  final controller = AppScope.read(context);
                   final levelId = g.plan.level?.id;
-                  final next = levelId == null
-                      ? null
-                      : AppScope.read(context).nextLevelId(levelId);
+                  final next =
+                      levelId == null ? null : controller.nextLevelId(levelId);
+                  final result = g.lastResult!;
                   return ResultsOverlay(
                     game: g,
+                    reward: _reward,
+                    onDoubleCoins: controller.ads
+                            .isAvailable(AdPlacement.doubleCoins)
+                        ? (reward) => controller.doubleRunCoins(reward, result)
+                        : null,
                     onQuit: _quit,
                     onNext: next != null && (g.outcome?.isWin ?? false)
                         ? () => _playNext(next)

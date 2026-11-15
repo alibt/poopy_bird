@@ -1,27 +1,171 @@
+import 'dart:async';
+import 'dart:convert';
+
+import '../economy/catalog.dart';
+import '../economy/rewards.dart';
+import '../storage/key_value_store.dart';
 import 'level_result.dart';
 import 'player_progress.dart';
 
-/// Where player progress lives. M2 keeps it in memory; M3 adds on-device
-/// storage, and a backend-synced implementation can replace either later.
+/// A run that has been stored, with the coins it paid.
+class RecordedRun {
+  const RecordedRun(this.progress, this.reward);
+
+  final PlayerProgress progress;
+  final RunReward reward;
+}
+
+/// Where player progress lives and how it changes. The local implementation
+/// stores it on the device; a backend-synced one can replace it later
+/// without touching the game or the screens.
+///
+/// Every operation is a named action rather than "save this progress", so
+/// a server can validate coin changes instead of trusting the client.
 abstract interface class ProgressRepository {
   Future<PlayerProgress> load();
 
-  /// Stores [result] and returns the updated progress.
-  Future<PlayerProgress> record(LevelResult result);
+  /// Stores [result], pays its reward and returns both.
+  Future<RecordedRun> record(LevelResult result);
+
+  /// Throws [ShopException] if the upgrade can't be bought.
+  Future<PlayerProgress> buyUpgrade(UpgradeId id);
+
+  /// Buys and equips a cosmetic. Throws [ShopException] on failure.
+  Future<PlayerProgress> buyCosmetic(String cosmeticId);
+
+  Future<PlayerProgress> equip(String cosmeticId);
+
+  /// Grants coins from outside a run, e.g. a rewarded ad or a purchase.
+  /// [reason] is recorded so a backend can verify the grant.
+  Future<PlayerProgress> grantCoins(int amount, {required String reason});
 }
 
-class InMemoryProgressRepository implements ProgressRepository {
-  InMemoryProgressRepository([this._progress = const PlayerProgress()]);
+/// Keeps progress in a [KeyValueStore] as JSON, and logs every action to an
+/// outbox that a future sync service can upload.
+class LocalProgressRepository implements ProgressRepository {
+  LocalProgressRepository(this.store, {DateTime Function()? clock})
+      : _clock = clock ?? DateTime.now;
 
-  PlayerProgress _progress;
-  final List<LevelResult> history = [];
+  final KeyValueStore store;
+  final DateTime Function() _clock;
 
-  @override
-  Future<PlayerProgress> load() async => _progress;
+  static const String progressKey = 'progress';
+  static const String corruptKey = 'progress.corrupt';
+  static const String outboxKey = 'outbox';
 
-  @override
-  Future<PlayerProgress> record(LevelResult result) async {
-    history.add(result);
-    return _progress = _progress.withResult(result);
+  /// Oldest actions are dropped beyond this, so the log can't grow forever
+  /// on a device that never syncs.
+  static const int maxOutbox = 500;
+
+  PlayerProgress? _progress;
+  List<Map<String, dynamic>>? _outbox;
+
+  /// Serialises operations so two quick taps can't both spend the same
+  /// coins.
+  Future<void> _queue = Future.value();
+
+  Future<T> _locked<T>(Future<T> Function() action) {
+    final result = _queue.then((_) => action());
+    _queue = result.then((_) {}, onError: (_) {});
+    return result;
   }
+
+  @override
+  Future<PlayerProgress> load() => _locked(_load);
+
+  Future<PlayerProgress> _load() async {
+    if (_progress case final progress?) return progress;
+    final raw = await store.read(progressKey);
+    var progress = const PlayerProgress();
+    if (raw != null) {
+      try {
+        progress =
+            PlayerProgress.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      } on Object {
+        // Keep the unreadable data for support instead of losing it, and
+        // start fresh rather than crash on launch.
+        await store.write(corruptKey, raw);
+      }
+    }
+    return _progress = progress;
+  }
+
+  Future<List<Map<String, dynamic>>> _loadOutbox() async {
+    if (_outbox case final outbox?) return outbox;
+    final raw = await store.read(outboxKey);
+    try {
+      return _outbox = raw == null
+          ? []
+          : (jsonDecode(raw) as List<dynamic>).cast<Map<String, dynamic>>();
+    } on Object {
+      return _outbox = [];
+    }
+  }
+
+  /// Actions not yet sent to a backend, oldest first.
+  Future<List<Map<String, dynamic>>> pendingActions() =>
+      _locked(() async => List.unmodifiable(await _loadOutbox()));
+
+  Future<PlayerProgress> _apply(
+    String action,
+    Map<String, dynamic> payload,
+    PlayerProgress Function(PlayerProgress) change,
+  ) async {
+    final updated = change(await _load());
+    final outbox = await _loadOutbox();
+    outbox.add({
+      'action': action,
+      'at': _clock().toUtc().toIso8601String(),
+      ...payload,
+    });
+    if (outbox.length > maxOutbox) {
+      outbox.removeRange(0, outbox.length - maxOutbox);
+    }
+    await store.write(progressKey, jsonEncode(updated.toJson()));
+    await store.write(outboxKey, jsonEncode(outbox));
+    return _progress = updated;
+  }
+
+  @override
+  Future<RecordedRun> record(LevelResult result) => _locked(() async {
+        final reward = RewardRules.forResult(result, await _load());
+        final progress = await _apply(
+          'run',
+          {'result': result.toJson(), 'coins': reward.total},
+          (p) => p.withResult(result),
+        );
+        return RecordedRun(progress, reward);
+      });
+
+  @override
+  Future<PlayerProgress> buyUpgrade(UpgradeId id) => _locked(
+      () => _apply('buyUpgrade', {'id': id.id}, (p) => p.buyUpgrade(id)));
+
+  @override
+  Future<PlayerProgress> buyCosmetic(String cosmeticId) => _locked(() => _apply(
+      'buyCosmetic', {'id': cosmeticId}, (p) => p.buyCosmetic(cosmeticId)));
+
+  @override
+  Future<PlayerProgress> equip(String cosmeticId) => _locked(
+      () => _apply('equip', {'id': cosmeticId}, (p) => p.equip(cosmeticId)));
+
+  @override
+  Future<PlayerProgress> grantCoins(int amount, {required String reason}) {
+    if (amount <= 0) throw ArgumentError.value(amount, 'amount');
+    return _locked(() => _apply(
+          'grantCoins',
+          {'amount': amount, 'reason': reason},
+          (p) => p.withCoins(amount),
+        ));
+  }
+}
+
+/// A [LocalProgressRepository] that forgets everything when the app closes.
+/// For tests and previews.
+class InMemoryProgressRepository extends LocalProgressRepository {
+  InMemoryProgressRepository([PlayerProgress? initial])
+      : super(MemoryKeyValueStore({
+          if (initial != null)
+            LocalProgressRepository.progressKey: jsonEncode(initial.toJson()),
+        }));
 }

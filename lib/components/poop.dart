@@ -7,7 +7,6 @@ import '../game/config.dart';
 import '../game/poopy_bird_game.dart';
 import '../systems/belly.dart';
 import 'car.dart';
-import 'effects.dart';
 import 'run_scoped.dart';
 
 class Poop extends PositionComponent
@@ -26,7 +25,7 @@ class Poop extends PositionComponent
   static double _radiusFor(PoopKind kind) =>
       kind == PoopKind.big ? GameConfig.bigPoopRadius : GameConfig.poopRadius;
 
-  static final Paint _body = Paint()..color = poopBrown;
+  late final Paint _body = Paint()..color = game.loadout.poopColor;
   static final Paint _shine = Paint()..color = const Color(0x55FFFFFF);
 
   final PoopKind kind;

@@ -8,6 +8,7 @@ import 'package:poopy_bird/components/car.dart';
 import 'package:poopy_bird/components/effects.dart';
 import 'package:poopy_bird/components/food_pickup.dart';
 import 'package:poopy_bird/components/poop.dart';
+import 'package:poopy_bird/economy/catalog.dart';
 import 'package:poopy_bird/game/poopy_bird_game.dart';
 import 'package:poopy_bird/systems/belly.dart';
 import 'package:poopy_bird/systems/food.dart';
@@ -58,6 +59,36 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PoopyBirdGame', () {
+    testWithGame<PoopyBirdGame>(
+      'upgrades and cosmetics from the loadout apply to the run',
+      () => PoopyBirdGame(
+        random: Random(42),
+        loadout: const Loadout(
+          upgrades: {
+            UpgradeId.belly: 3,
+            UpgradeId.combo: 2,
+            UpgradeId.calm: 1,
+            UpgradeId.burrito: 1,
+          },
+          plumage: 'plumage_royal',
+          poop: 'poop_gold',
+        ),
+      ),
+      (game) async {
+        expect(game.belly.capacity, 9);
+        expect(game.belly.ammo, 9);
+        expect(game.combo.window, 3.5);
+        expect(game.rage.fillPerEscape, closeTo(0.18, 1e-9));
+        game.belly.eat(FoodType.burrito);
+        expect(game.belly.bigPoopsLeft, 4);
+        expect(game.bird.paint.colorFilter, isNotNull);
+
+        final car = await _parkCar(game);
+        await _dropOn(game, car);
+        expect(car.isSplatted, isTrue);
+      },
+    );
+
     testWithGame<PoopyBirdGame>(
       'distance score increases at 60fps',
       _createGame,

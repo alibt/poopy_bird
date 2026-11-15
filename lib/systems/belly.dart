@@ -11,10 +11,14 @@ class Belly {
   Belly({
     this.capacity = GameConfig.bellyCapacity,
     this.digestionInterval = GameConfig.digestionInterval,
+    this.chiliDuration = GameConfig.chiliDuration,
+    this.burritoBigPoops = GameConfig.burritoBigPoops,
   }) : ammo = capacity;
 
   final int capacity;
   final double digestionInterval;
+  final double chiliDuration;
+  final int burritoBigPoops;
 
   int ammo;
   int bigPoopsLeft = 0;
@@ -51,9 +55,9 @@ class Belly {
       case FoodType.berries:
         ammo = min(capacity, ammo + GameConfig.berriesAmmo);
       case FoodType.chili:
-        rapidFireLeft = GameConfig.chiliDuration;
+        rapidFireLeft = chiliDuration;
       case FoodType.burrito:
-        bigPoopsLeft += GameConfig.burritoBigPoops;
+        bigPoopsLeft += burritoBigPoops;
     }
   }
 
