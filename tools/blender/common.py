@@ -143,6 +143,24 @@ def toon_material(
     return mat
 
 
+def flat_material(
+    name: str,
+    color: tuple[float, float, float, float],
+) -> bpy.types.Material:
+    """Unlit solid color — no toon bands (use for side-view wheels)."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+    output = nodes.new("ShaderNodeOutputMaterial")
+    emission = nodes.new("ShaderNodeEmission")
+    emission.inputs["Color"].default_value = color
+    emission.inputs["Strength"].default_value = 1.0
+    links.new(emission.outputs["Emission"], output.inputs["Surface"])
+    return mat
+
+
 def outline_material(name: str = "Outline") -> bpy.types.Material:
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True

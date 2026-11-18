@@ -116,7 +116,7 @@ def export_cars():
             # True side view so wheels stay circular (CAR 3/4 squashed them).
             axis="Y",
             resolution=(896, 480),
-            outline=5,
+            outline=3,
             padding=1.18,
         )
     shutil.copyfile(IMAGES_DIR / "car_sedan.png", IMAGES_DIR / "car-body.png")
