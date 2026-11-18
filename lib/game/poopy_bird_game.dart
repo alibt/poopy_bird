@@ -155,12 +155,15 @@ class PoopyBirdGame extends FlameGame
 
   double get aimGroundY => laneBaseline(aimLane);
 
-  /// Soft ceiling Y the bird is pushed below when altitude pressure rises.
-  double get pressureCeiling {
-    final top = GameConfig.birdSize / 2;
-    final floor = roadTop - GameConfig.birdSize;
-    return top + (floor - top) * altitudePressure * 0.7;
+  /// Y the bird settles to. Misses/time push it down; hits lift it.
+  double get cruiseY {
+    final high = size.y * GameConfig.cruiseHighFraction;
+    final low = size.y * GameConfig.cruiseLowFraction;
+    return high + (low - high) * altitudePressure.clamp(0.0, 1.0);
   }
+
+  double get foodBandTop => size.y * GameConfig.foodBandTopFraction;
+  double get foodBandBottom => size.y * GameConfig.foodBandBottomFraction;
 
   /// Bird below this Y is in the attacker danger band.
   double get attackerDangerY => size.y * GameConfig.attackerDangerFraction;
@@ -214,10 +217,10 @@ class PoopyBirdGame extends FlameGame
     combo.update(dt);
     belly.update(dt);
     objectives.onScore(score.score);
-    altitudePressure = max(
-      0,
-      altitudePressure -
-          GameConfig.altitudePressureRecoverPerSecond * dt,
+    // Time slowly sinks cruise altitude — hits are the way back up.
+    altitudePressure = min(
+      1,
+      altitudePressure + GameConfig.altitudePressurePerSecond * dt,
     );
     _checkEnd();
   }
@@ -377,6 +380,7 @@ class PoopyBirdGame extends FlameGame
     final multiplier = combo.registerHit();
     final points =
         score.registerHit(basePoints: car.type.points, multiplier: multiplier);
+    onAltitudeFromHit();
     if (multiplier > 1) feedback.audio.sfx('combo.wav', volume: 0.7);
     if (car.type.raisesRageOnHit) {
       rage.onCarEscaped();
@@ -441,6 +445,13 @@ class PoopyBirdGame extends FlameGame
       altitudePressure + GameConfig.altitudePressurePerEscape,
     );
     if (rage.isFull) finish(RunOutcome.rageOut);
+  }
+
+  void onAltitudeFromHit() {
+    altitudePressure = max(
+      0,
+      altitudePressure - GameConfig.altitudePressurePerHit,
+    );
   }
 
   void onFoodEaten(FoodPickup food) {

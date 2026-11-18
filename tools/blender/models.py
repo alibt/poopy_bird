@@ -966,28 +966,18 @@ def build_tree(*, seed: int = 0) -> list[bpy.types.Object]:
 
 
 def build_street_tile(*, length: float = 10.0) -> list[bpy.types.Object]:
-    """Asphalt strip with curb + dashed lane paint (top-down sprite)."""
+    """Asphalt strip with curbs only — lane dashes are drawn in-game (one line)."""
     asphalt = toon_material("street_asphalt", (0.22, 0.24, 0.26, 1.0), steps=2)
     curb = toon_material("street_curb", (0.78, 0.80, 0.82, 1.0), steps=2)
-    paint = toon_material("street_paint", (0.98, 0.88, 0.12, 1.0), steps=2)
     shoulder = toon_material("street_shoulder", (0.32, 0.34, 0.36, 1.0), steps=2)
     # Lay out in XY so a Z-down camera sees the road surface.
-    objs = [
+    return [
         mesh_cube("asphalt", (length, 3.2, 0.08), (0, 0, 0), asphalt),
         mesh_cube("shoulder_n", (length, 0.4, 0.09), (0, 1.4, 0.02), shoulder),
         mesh_cube("shoulder_f", (length, 0.4, 0.09), (0, -1.4, 0.02), shoulder),
         mesh_cube("curb_n", (length, 0.22, 0.18), (0, 1.7, 0.06), curb),
         mesh_cube("curb_f", (length, 0.22, 0.18), (0, -1.7, 0.06), curb),
     ]
-    x = -length * 0.45
-    i = 0
-    while x < length * 0.45:
-        objs.append(
-            mesh_cube(f"dash_{i}", (0.7, 0.14, 0.05), (x, 0, 0.05), paint)
-        )
-        x += 1.15
-        i += 1
-    return objs
 
 
 def build_cloud_tile():

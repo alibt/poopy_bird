@@ -62,17 +62,23 @@ class SkyBackground extends StatelessWidget {
 
 /// A rounded card for menu content and in-game dialogs.
 class Panel extends StatelessWidget {
-  const Panel({super.key, required this.child, this.maxWidth = 440});
+  const Panel({
+    super.key,
+    required this.child,
+    this.maxWidth = 440,
+    this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+  });
 
   final Widget child;
   final double maxWidth;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: padding,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(20),
@@ -84,26 +90,54 @@ class Panel extends StatelessWidget {
   }
 }
 
-/// A dark full-screen scrim with a centred, scrollable panel; used for the
-/// in-game overlays.
+/// A dark full-screen scrim with a centred panel; used for in-game overlays.
+///
+/// Set [scrollable] false for compact dialogs (results) that must fit without
+/// scrolling on phones.
 class OverlayPanel extends StatelessWidget {
-  const OverlayPanel({super.key, required this.child});
+  const OverlayPanel({
+    super.key,
+    required this.child,
+    this.scrollable = true,
+    this.maxWidth = 400,
+    this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+  });
 
   final Widget child;
+  final bool scrollable;
+  final double maxWidth;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
-    final maxH = MediaQuery.sizeOf(context).height * 0.92;
+    final size = MediaQuery.sizeOf(context);
+    final maxH = size.height * (scrollable ? 0.92 : 0.88);
+    final panel = Panel(
+      maxWidth: maxWidth,
+      padding: padding,
+      child: child,
+    );
     return ColoredBox(
       color: Colors.black45,
       child: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxH, maxWidth: 520),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Panel(child: child),
-            ),
+            constraints: BoxConstraints(maxHeight: maxH, maxWidth: maxWidth + 24),
+            child: scrollable
+                ? SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    child: panel,
+                  )
+                : Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    // Scale down on short phones instead of overflowing/scrolling.
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: panel,
+                    ),
+                  ),
           ),
         ),
       ),

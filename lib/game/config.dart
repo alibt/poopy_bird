@@ -1,10 +1,20 @@
 /// Tunable gameplay constants. Keep magic numbers here, not in components.
 abstract final class GameConfig {
-  // Bird
+  // Bird — cruise-and-hop, not frantic flap-to-survive.
   static const double birdSize = 72;
-  static const double gravity = 400;
-  static const double flapVelocity = -300;
-  static const double flapCooldown = 0.15;
+
+  /// Light gravity; the bird mostly settles to [cruise] rather than plummeting.
+  static const double gravity = 140;
+
+  /// Hop up into the food band. Mild so one flap is a grab, not a panic climb.
+  static const double flapVelocity = -220;
+  static const double flapCooldown = 0.18;
+
+  /// Soft pull toward the current cruise altitude (px/s²).
+  static const double cruiseSettle = 260;
+
+  /// Seconds after a flap before settle-down toward cruise kicks in.
+  static const double flapHangTime = 0.35;
 
   // Poop
   static const double poopCooldown = 0.5;
@@ -29,15 +39,12 @@ abstract final class GameConfig {
   /// Seconds to digest one poop back into the belly.
   static const double digestionInterval = 3;
 
-  // Food
+  // Food — only in the max-altitude hop band.
   static const double foodSpawnMinInterval = 5;
   static const double foodSpawnMaxInterval = 9;
   static const int berriesAmmo = 3;
   static const double chiliDuration = 5;
   static const int burritoBigPoops = 3;
-
-  /// Chance a food spawn is a low rooftop snack (risky dive).
-  static const double rooftopFoodChance = 0.35;
 
   // World
   /// Fraction of the screen height taken by the road, measured from the bottom.
@@ -68,10 +75,25 @@ abstract final class GameConfig {
   /// Within a timed level, scroll speed grows by this fraction by the end.
   static const double levelScrollSpeedRamp = 0.35;
 
-  // Altitude pressure — missed cars push the bird's soft ceiling down.
-  static const double altitudePressurePerEscape = 0.14;
-  static const double altitudePressureRecoverPerSecond = 0.035;
-  static const double altitudePressurePull = 90;
+  // Altitude (0 = high cruise, 1 = forced low near the road).
+  /// Missed escaping car — big drop.
+  static const double altitudePressurePerEscape = 0.18;
+
+  /// Successful splat lifts cruise a little.
+  static const double altitudePressurePerHit = 0.07;
+
+  /// Slow sink over a long run (pressure per second).
+  static const double altitudePressurePerSecond = 0.008;
+
+  /// Food band as a fraction of screen height from the top.
+  static const double foodBandTopFraction = 0.08;
+  static const double foodBandBottomFraction = 0.22;
+
+  /// Highest cruise (when pressure is 0), as a fraction of screen height.
+  static const double cruiseHighFraction = 0.32;
+
+  /// Lowest cruise (when pressure is 1), just above the road.
+  static const double cruiseLowFraction = 0.58;
 
   /// Bird below this fraction of the sky (from top) can be shot by attackers.
   static const double attackerDangerFraction = 0.55;

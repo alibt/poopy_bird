@@ -37,7 +37,8 @@ class Bird extends PositionComponent
   double _sinceFlap = GameConfig.flapCooldown;
   double _sincePoop = double.infinity;
 
-  Vector2 get spawnPoint => Vector2(game.size.x * 0.2, game.size.y * 0.3);
+  /// Starts at cruise height — not up in the food band.
+  Vector2 get spawnPoint => Vector2(game.size.x * 0.2, game.cruiseY);
 
   @override
   Future<void> onLoad() async {
@@ -70,6 +71,7 @@ class Bird extends PositionComponent
     _sincePoop = double.infinity;
   }
 
+  /// Hop toward the food band. Cruise altitude is maintained without spam.
   void flap() {
     if (_sinceFlap < GameConfig.flapCooldown) return;
     velocityY = GameConfig.flapVelocity;
@@ -109,20 +111,31 @@ class Bird extends PositionComponent
     _sincePoop += dt;
 
     velocityY += GameConfig.gravity * dt;
-    // Missed cars pile on altitude pressure — a gentle downward pull.
-    velocityY +=
-        GameConfig.altitudePressurePull * game.altitudePressure * dt;
+
+    // Settle toward cruise so you aren't flapping every second to stay up.
+    // After a hop, hang briefly so food is grab-able, then drift back down.
+    final cruise = game.cruiseY;
+    final settling = _sinceFlap >= GameConfig.flapHangTime;
+    if (settling) {
+      final delta = cruise - position.y;
+      velocityY += delta.sign *
+          min(delta.abs() * 4, GameConfig.cruiseSettle) *
+          dt;
+      // Dampen so it doesn't oscillate around cruise.
+      velocityY *= pow(0.15, dt).toDouble();
+    }
+
     position.y += velocityY * dt;
 
-    // Soft ceiling drops as pressure rises; hard edges still clamp.
-    final top = max(size.y / 2, game.pressureCeiling);
-    final bottom = game.size.y - size.y / 2;
+    // Hard ceiling = top of food band; floor = near road / screen bottom.
+    final top = game.foodBandTop;
+    final bottom = min(game.size.y - size.y / 2, game.roadTop - size.y * 0.2);
     if (position.y < top) {
       position.y = top;
       velocityY = max(velocityY, 0);
     } else if (position.y > bottom) {
       position.y = bottom;
-      velocityY = 0;
+      velocityY = min(velocityY, 0);
     }
 
     if (holdingPoop) poop();
