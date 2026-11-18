@@ -48,16 +48,21 @@ def reset_scene() -> bpy.types.Scene:
     links.new(bg.outputs["Background"], out.inputs["Surface"])
 
     sun = bpy.data.objects.new("KeyLight", bpy.data.lights.new("KeyLight", "SUN"))
-    sun.data.energy = 2.4
-    sun.rotation_euler = Euler((math.radians(45), math.radians(15), math.radians(35)))
+    sun.data.energy = 4.5
+    sun.rotation_euler = Euler((math.radians(50), math.radians(25), math.radians(40)))
     scene.collection.objects.link(sun)
 
     fill = bpy.data.objects.new(
         "FillLight", bpy.data.lights.new("FillLight", "SUN")
     )
-    fill.data.energy = 0.7
-    fill.rotation_euler = Euler((math.radians(20), math.radians(-40), math.radians(-20)))
+    fill.data.energy = 1.4
+    fill.rotation_euler = Euler((math.radians(25), math.radians(-50), math.radians(-25)))
     scene.collection.objects.link(fill)
+
+    rim = bpy.data.objects.new("RimLight", bpy.data.lights.new("RimLight", "SUN"))
+    rim.data.energy = 1.8
+    rim.rotation_euler = Euler((math.radians(-20), math.radians(160), 0))
+    scene.collection.objects.link(rim)
     return scene
 
 
@@ -224,8 +229,8 @@ def mesh_uv_sphere(
     location: tuple[float, float, float],
     material: bpy.types.Material,
     *,
-    segments: int = 16,
-    ring_count: int = 10,
+    segments: int = 24,
+    ring_count: int = 16,
     scale: tuple[float, float, float] | None = None,
 ) -> bpy.types.Object:
     bpy.ops.mesh.primitive_uv_sphere_add(
@@ -240,7 +245,95 @@ def mesh_uv_sphere(
     return obj
 
 
-def join_objects(objects: list[bpy.types.Object], name: str) -> bpy.types.Object:
+def mesh_cone(
+    name: str,
+    radius1: float,
+    depth: float,
+    location: tuple[float, float, float],
+    material: bpy.types.Material,
+    *,
+    radius2: float = 0.0,
+    vertices: int = 16,
+    rotation: tuple[float, float, float] = (0, 0, 0),
+) -> bpy.types.Object:
+    bpy.ops.mesh.primitive_cone_add(
+        vertices=vertices,
+        radius1=radius1,
+        radius2=radius2,
+        depth=depth,
+        location=location,
+    )
+    obj = bpy.context.active_object
+    obj.name = name
+    obj.rotation_euler = Euler(rotation)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    assign_material(obj, material)
+    return obj
+
+
+def extrude_profile(
+    name: str,
+    points_xz: list[tuple[float, float]],
+    *,
+    width: float = 1.0,
+    material: bpy.types.Material,
+) -> bpy.types.Object:
+    """Build a solid by extruding an XZ silhouette along Y (true side-view shapes)."""
+    import bmesh
+
+    mesh = bpy.data.meshes.new(name)
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+
+    bm = bmesh.new()
+    half = width * 0.5
+    # Front and back rings.
+    front = [bm.verts.new((x, half, z)) for x, z in points_xz]
+    back = [bm.verts.new((x, -half, z)) for x, z in points_xz]
+    bm.verts.ensure_lookup_table()
+    n = len(points_xz)
+    bm.faces.new(front)
+    bm.faces.new(list(reversed(back)))
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new([front[i], front[j], back[j], back[i]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(mesh)
+    bm.free()
+    assign_material(obj, material)
+    return obj
+
+
+def bevel(
+    obj: bpy.types.Object,
+    *,
+    width: float = 0.06,
+    segments: int = 3,
+) -> bpy.types.Object:
+    """Round hard edges so silhouettes read as toy-like, not Minecraft."""
+    mod = obj.modifiers.new("Bevel", "BEVEL")
+    mod.width = width
+    mod.segments = segments
+    mod.limit_method = "ANGLE"
+    mod.angle_limit = math.radians(30)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+    return obj
+
+
+def apply_loc_rot_scale(obj: bpy.types.Object) -> None:
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+
+
+def join_objects(
+    objects: list[bpy.types.Object],
+    name: str,
+    *,
+    smooth: bool = False,
+) -> bpy.types.Object:
     bpy.ops.object.select_all(action="DESELECT")
     for obj in objects:
         obj.select_set(True)
@@ -248,6 +341,8 @@ def join_objects(objects: list[bpy.types.Object], name: str) -> bpy.types.Object
     bpy.ops.object.join()
     result = bpy.context.active_object
     result.name = name
+    if smooth:
+        bpy.ops.object.shade_smooth()
     return result
 
 
@@ -290,6 +385,18 @@ def setup_ortho_camera(
         # Side view: traffic faces +X, camera on +Y looking toward origin.
         cam.location = (center.x, center.y + extent * 3, center.z)
         cam.rotation_euler = Euler((math.radians(90), 0, math.radians(180)))
+    elif axis.upper() == "CHAR":
+        # Slight 3/4 for characters — more dimension, still sprite-readable.
+        dist = extent * 3.2
+        cam.location = (
+            center.x + dist * 0.18,
+            center.y + dist,
+            center.z + dist * 0.12,
+        )
+        # Point at subject.
+        direction = center - cam.location
+        rot = direction.to_track_quat("-Z", "Y").to_euler()
+        cam.rotation_euler = rot
     elif axis.upper() == "Z":
         cam.location = (center.x, center.y, center.z + extent * 3)
         cam.rotation_euler = Euler((0, 0, 0))

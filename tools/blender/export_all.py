@@ -9,10 +9,10 @@ Optional argv after ``--``:
 
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 
-# Blender puts the script path on argv but not always on sys.path.
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
@@ -28,6 +28,7 @@ from common import (  # noqa: E402
     setup_ortho_camera,
 )
 from models import (  # noqa: E402
+    bird_pose,
     build_bird,
     build_car,
     build_car_wash_truck,
@@ -40,18 +41,19 @@ from models import (  # noqa: E402
     build_skyline_tile,
     build_tire,
     build_trophy,
+    food_pose,
 )
 
 CAR_COLORS = {
-    "sedan": (0.85, 0.18, 0.16, 1.0),
-    "sports": (0.95, 0.78, 0.12, 1.0),
-    "convertible": (0.15, 0.55, 0.85, 1.0),
-    "washed": (0.92, 0.92, 0.95, 1.0),
-    "bus": (0.2, 0.55, 0.35, 1.0),
-    "taxi": (0.95, 0.8, 0.1, 1.0),
-    "limo": (0.08, 0.08, 0.1, 1.0),
-    "police": (0.12, 0.2, 0.55, 1.0),
-    "sunroof": (0.55, 0.25, 0.65, 1.0),
+    "sedan": (0.88, 0.16, 0.14, 1.0),
+    "sports": (0.98, 0.78, 0.08, 1.0),
+    "convertible": (0.12, 0.55, 0.9, 1.0),
+    "washed": (0.93, 0.93, 0.96, 1.0),
+    "bus": (0.18, 0.58, 0.38, 1.0),
+    "taxi": (0.98, 0.82, 0.08, 1.0),
+    "limo": (0.07, 0.07, 0.09, 1.0),
+    "police": (0.12, 0.22, 0.58, 1.0),
+    "sunroof": (0.58, 0.22, 0.7, 1.0),
 }
 
 
@@ -65,14 +67,6 @@ def _parse_only() -> set[str] | None:
     return None
 
 
-def _visible_meshes():
-    return [
-        o
-        for o in bpy.context.scene.objects
-        if o.type == "MESH" and not o.name.endswith("_outline")
-    ]
-
-
 def _render_subject(
     path: str,
     builder,
@@ -80,35 +74,34 @@ def _render_subject(
     axis: str = "Y",
     resolution=(512, 512),
     outline: int = 5,
+    padding: float = 1.18,
 ):
     reset_scene()
     builder()
     subjects = [o for o in bpy.context.scene.objects if o.type == "MESH"]
-    setup_ortho_camera(subjects, axis=axis, resolution=resolution)
+    setup_ortho_camera(subjects, axis=axis, resolution=resolution, padding=padding)
     bpy.context.scene.world.node_tree.nodes["Background"].inputs[
         "Strength"
     ].default_value = 0.0
     out = render_png(IMAGES_DIR / path)
     if outline > 0:
         png_outline(out, width=outline)
+    return out
 
 
 def export_bird():
-    # 8 flap frames; angle sweeps up/down.
-    angles = [0, 25, 45, 30, 5, -20, -35, -15]
-    for i, angle in enumerate(angles, start=1):
+    for i in range(1, 9):
+        pose = bird_pose(i)
         reset_scene()
-        build_bird(wing_angle=angle)
+        build_bird(**pose)
         subjects = [o for o in bpy.context.scene.objects if o.type == "MESH"]
-        setup_ortho_camera(subjects, axis="Y", resolution=(512, 512))
+        # Slight 3/4 so the wing reads in depth; still faces +X (right).
+        setup_ortho_camera(subjects, axis="CHAR", resolution=(720, 720), padding=1.3)
         bpy.context.scene.world.node_tree.nodes["Background"].inputs[
             "Strength"
         ].default_value = 0.0
         primary = render_png(IMAGES_DIR / f"bird_{i:02d}.png")
-        png_outline(primary, width=6)
-        # Legacy alias for mid-migrate loaders.
-        import shutil
-
+        png_outline(primary, width=7)
         shutil.copyfile(primary, IMAGES_DIR / f"frame-{i}.png")
 
 
@@ -118,52 +111,77 @@ def export_cars():
             f"car_{kind}.png",
             lambda k=kind, c=color: build_car(k, body_color=c),
             axis="Y",
-            resolution=(640, 360),
+            resolution=(768, 420),
+            outline=6,
+            padding=1.2,
         )
-    # Compatibility alias for the sedan body used by older code paths.
-    import shutil
-
     shutil.copyfile(IMAGES_DIR / "car_sedan.png", IMAGES_DIR / "car-body.png")
 
     _render_subject(
-        "boss_car_wash.png", build_car_wash_truck, axis="Y", resolution=(768, 420)
+        "boss_car_wash.png",
+        build_car_wash_truck,
+        axis="Y",
+        resolution=(900, 480),
+        outline=6,
     )
     _render_subject(
-        "boss_mayor_limo.png", build_mayor_limo, axis="Y", resolution=(768, 360)
+        "boss_mayor_limo.png",
+        build_mayor_limo,
+        axis="Y",
+        resolution=(900, 400),
+        outline=6,
     )
     _render_subject(
         "boss_monster_truck.png",
         build_monster_truck,
         axis="Y",
-        resolution=(640, 480),
+        resolution=(768, 560),
+        outline=6,
     )
-    _render_subject("tire.png", build_tire, axis="Y", resolution=(256, 256))
+    _render_subject("tire.png", build_tire, axis="Y", resolution=(320, 320), outline=5)
 
 
 def export_food():
     for kind in ("berries", "chili", "burrito"):
-        _render_subject(
-            f"food_{kind}.png",
-            lambda k=kind: build_food(k),
-            axis="Y",
-            resolution=(256, 256),
+        # Animated tumble cycle + a still alias for menus.
+        for i in range(1, 7):
+            pose = food_pose(i)
+            _render_subject(
+                f"food_{kind}_{i:02d}.png",
+                lambda k=kind, p=pose: build_food(k, **p),
+                axis="Y",
+                resolution=(320, 320),
+                outline=5,
+            )
+        shutil.copyfile(
+            IMAGES_DIR / f"food_{kind}_01.png", IMAGES_DIR / f"food_{kind}.png"
         )
 
 
 def export_ui():
-    _render_subject("coin.png", build_coin, axis="Y", resolution=(256, 256))
+    # Coin spin frames for juice; frame 01 is the static badge.
+    for i, spin in enumerate((0, 30, 60, 90, 120, 150), start=1):
+        _render_subject(
+            f"coin_{i:02d}.png",
+            lambda s=spin: build_coin(spin=s),
+            axis="Y",
+            resolution=(256, 256),
+            outline=5,
+        )
+    shutil.copyfile(IMAGES_DIR / "coin_01.png", IMAGES_DIR / "coin.png")
+
     for tier in ("bronze", "silver", "gold"):
         _render_subject(
             f"trophy_{tier}.png",
             lambda t=tier: build_trophy(t),
             axis="Y",
-            resolution=(256, 320),
+            resolution=(320, 400),
+            outline=5,
         )
-    _render_subject("medal.png", build_medal, axis="Y", resolution=(256, 320))
+    _render_subject("medal.png", build_medal, axis="Y", resolution=(288, 360), outline=5)
 
 
 def export_backgrounds():
-    # Soft parallax plates — no hard outline (distance read).
     reset_scene()
     clouds = build_cloud_tile()
     setup_ortho_camera(clouds, axis="Y", resolution=(1400, 400), padding=1.05)
@@ -174,7 +192,7 @@ def export_backgrounds():
 
     reset_scene()
     far = build_skyline_tile(seed=1, near=False)
-    setup_ortho_camera(far, axis="Y", resolution=(1200, 500), padding=1.02)
+    setup_ortho_camera(far, axis="Y", resolution=(1200, 520), padding=1.02)
     bpy.context.scene.world.node_tree.nodes["Background"].inputs[
         "Strength"
     ].default_value = 0.0
@@ -182,7 +200,7 @@ def export_backgrounds():
 
     reset_scene()
     near = build_skyline_tile(seed=2, near=True)
-    setup_ortho_camera(near, axis="Y", resolution=(1200, 420), padding=1.02)
+    setup_ortho_camera(near, axis="Y", resolution=(1200, 440), padding=1.02)
     bpy.context.scene.world.node_tree.nodes["Background"].inputs[
         "Strength"
     ].default_value = 0.0

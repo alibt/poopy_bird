@@ -121,7 +121,7 @@ class PoopyBirdGame extends FlameGame
     final frames = await Future.wait([
       for (var i = 1; i <= 8; i++) loadSprite('bird_${i.toString().padLeft(2, '0')}.png'),
     ]);
-    bird = Bird(animation: SpriteAnimation.spriteList(frames, stepTime: 0.1));
+    bird = Bird(animation: SpriteAnimation.spriteList(frames, stepTime: 0.07));
     if (loadout.birdHue != 0) {
       bird.paint.colorFilter = hueRotation(loadout.birdHue);
     }
