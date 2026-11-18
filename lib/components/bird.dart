@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -10,14 +11,22 @@ import 'car.dart';
 import 'food_pickup.dart';
 import 'poop.dart';
 
-class Bird extends SpriteAnimationComponent
+class Bird extends PositionComponent
     with HasGameReference<PoopyBirdGame>, CollisionCallbacks {
-  Bird({required super.animation})
-      : super(
+  Bird({required SpriteAnimation animation, this.hue = 0})
+      : _animation = animation,
+        super(
           size: Vector2.all(GameConfig.birdSize),
           anchor: Anchor.center,
           priority: 30,
         );
+
+  final SpriteAnimation _animation;
+  final double hue;
+  late final SpriteAnimationComponent _visual;
+
+  /// Drawn sprite paint (cosmetics). Exposed for tests and tinting.
+  Paint get paint => _visual.paint;
 
   double velocityY = 0;
 
@@ -33,11 +42,22 @@ class Bird extends SpriteAnimationComponent
   @override
   Future<void> onLoad() async {
     position = spawnPoint;
-    // The artwork has empty space under the feet; keep the hitbox on the body
-    // so near-misses feel fair.
+    // Artwork faces left; flip the visual only so hitboxes stay upright.
+    _visual = SpriteAnimationComponent(
+      animation: _animation,
+      size: size.clone(),
+      anchor: Anchor.center,
+      position: size / 2,
+      scale: Vector2(-1, 1),
+    );
+    if (hue != 0) {
+      _visual.paint.colorFilter = hueRotation(hue);
+    }
+    add(_visual);
+    // Keep the hitbox on the body so near-misses feel fair.
     add(CircleHitbox(
       radius: size.x * 0.34,
-      position: Vector2(size.x * 0.52, size.y * 0.38),
+      position: Vector2(size.x * 0.5, size.y * 0.42),
       anchor: Anchor.center,
     ));
   }

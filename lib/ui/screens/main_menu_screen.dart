@@ -44,7 +44,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/images/bird_01.png', height: 170),
+                  Transform.flip(
+                    flipX: true,
+                    child: Image.asset('assets/images/bird_01.png', height: 170),
+                  ),
                   const SizedBox(width: 24),
                   Column(
                     mainAxisSize: MainAxisSize.min,

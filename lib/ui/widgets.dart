@@ -93,12 +93,18 @@ class OverlayPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxH = MediaQuery.sizeOf(context).height * 0.92;
     return ColoredBox(
       color: Colors.black45,
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
-          child: Panel(child: child),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH, maxWidth: 520),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Panel(child: child),
+            ),
+          ),
         ),
       ),
     );

@@ -57,19 +57,19 @@ class ResultsOverlay extends StatelessWidget {
             _title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 30,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
               color: won ? brandBrown : Colors.red.shade700,
             ),
           ),
           if (level != null) ...[
-            const SizedBox(height: 6),
-            StarRow(stars: result.stars, size: 40),
+            const SizedBox(height: 4),
+            StarRow(stars: result.stars, size: 34),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Score: ${result.score}',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Text(
             game.score.isNewBest ? 'New best!' : 'Best: ${game.score.best}',
@@ -82,31 +82,39 @@ class ResultsOverlay extends StatelessWidget {
           if (result.isEndless) _EndlessRank(runId: result.runId),
           const SizedBox(height: 4),
           Text(
-              'Cars splatted: ${result.carsSplatted}   Best combo: x${result.bestCombo}'),
+            'Cars splatted: ${result.carsSplatted} · Best combo: x${result.bestCombo}',
+            textAlign: TextAlign.center,
+          ),
           if (tracker.objectives.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             for (var i = 0; i < tracker.objectives.length; i++)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    tracker.isMet(i)
-                        ? Icons.check_circle_rounded
-                        : Icons.cancel_rounded,
-                    size: 18,
-                    color: tracker.isMet(i)
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                      '${tracker.objectives[i].description}  ${tracker.progressLabel(i)}'),
-                ],
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 1),
+                child: Row(
+                  children: [
+                    Icon(
+                      tracker.isMet(i)
+                          ? Icons.check_circle_rounded
+                          : Icons.cancel_rounded,
+                      size: 18,
+                      color: tracker.isMet(i)
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '${tracker.objectives[i].description}  ${tracker.progressLabel(i)}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
           if (level != null && won && result.stars < 3)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: 4),
               child: Text(
                 result.stars < 2
                     ? '${level.stars.two} points for 2 stars'
@@ -114,25 +122,24 @@ class ResultsOverlay extends StatelessWidget {
                 style: const TextStyle(color: Colors.black54),
               ),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           ValueListenableBuilder<RunReward?>(
             valueListenable: reward,
             builder: (context, value, _) => value == null
                 ? const SizedBox(height: 28)
                 : _CoinsEarned(reward: value, onDouble: onDoubleCoins),
           ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 8,
             children: [
               OutlinedButton(onPressed: onQuit, child: const Text('Menu')),
-              const SizedBox(width: 10),
               OutlinedButton(
                   onPressed: game.restart, child: const Text('Retry')),
-              if (onNext != null) ...[
-                const SizedBox(width: 10),
+              if (onNext != null)
                 FilledButton(onPressed: onNext, child: const Text('Next')),
-              ],
             ],
           ),
         ],
@@ -201,8 +208,11 @@ class _CoinsEarnedState extends State<_CoinsEarned> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 6,
           children: [
             Text('+',
                 style: TextStyle(
@@ -211,22 +221,17 @@ class _CoinsEarnedState extends State<_CoinsEarned> {
                     color: Colors.amber.shade900)),
             CoinCount(coins: total, size: 28),
             if (_doubled)
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Text('x2!',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: Colors.green.shade700)),
-              ),
-            if (widget.onDouble != null && reward.total > 0 && !_doubled) ...[
-              const SizedBox(width: 12),
+              Text('x2!',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.green.shade700)),
+            if (widget.onDouble != null && reward.total > 0 && !_doubled)
               FilledButton.icon(
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
                 onPressed: _busy ? null : _double,
                 icon: const Icon(Icons.ondemand_video_rounded, size: 18),
                 label: Text(_busy ? '...' : 'Double it'),
               ),
-            ],
           ],
         ),
         if (bonuses.isNotEmpty)

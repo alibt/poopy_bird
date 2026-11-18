@@ -122,6 +122,24 @@ class PoopyBirdGame extends FlameGame
   /// Height at which a falling poop hits the road (the near lane's surface).
   double get poopGroundY => laneBaseline(GameConfig.laneBaselines.length - 1);
 
+  /// Lane closest to the bird's height — used for the landing aim shadow.
+  int get aimLane {
+    final birdY = bird.position.y;
+    var best = 0;
+    var bestDist = double.infinity;
+    for (var i = 0; i < GameConfig.laneBaselines.length; i++) {
+      final y = laneBaseline(i);
+      final dist = (y - birdY).abs();
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  double get aimGroundY => laneBaseline(aimLane);
+
   @override
   Color backgroundColor() => const Color(0xFF87CEEB);
 
@@ -132,10 +150,10 @@ class PoopyBirdGame extends FlameGame
     final frames = await Future.wait([
       for (var i = 1; i <= 8; i++) loadSprite('bird_${i.toString().padLeft(2, '0')}.png'),
     ]);
-    bird = Bird(animation: SpriteAnimation.spriteList(frames, stepTime: 0.07));
-    if (loadout.birdHue != 0) {
-      bird.paint.colorFilter = hueRotation(loadout.birdHue);
-    }
+    bird = Bird(
+      animation: SpriteAnimation.spriteList(frames, stepTime: 0.07),
+      hue: loadout.birdHue,
+    );
     carSpawner = CarSpawner();
     foodSpawner = FoodSpawner();
     hud = Hud();

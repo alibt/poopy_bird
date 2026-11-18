@@ -63,12 +63,8 @@ class Car extends PositionComponent
   /// override this.
   Future<void> buildVisuals() async {
     final bodySprite = await game.loadSprite(type.bodyAsset!);
-    // The artwork faces right but traffic drives left, so mirror the visuals.
-    final visuals = PositionComponent(
-      size: size,
-      position: Vector2(size.x, 0),
-      scale: Vector2(-1, 1),
-    );
+    // Blender toon assets already face left (travel direction). Do not mirror.
+    final visuals = PositionComponent(size: size);
 
     if (type.wheelsInSprite) {
       visuals.add(SpriteComponent(sprite: bodySprite, size: size.clone()));
@@ -135,11 +131,11 @@ class Car extends PositionComponent
     if (isRemoving) return;
     position.x -= speed * dt;
 
-    // Roll the wheels to match ground speed. The visuals are mirrored, so a
-    // positive angle here turns them counter-clockwise on screen.
+    // Moving left: bottom of the tire should roll left → clockwise on screen.
+    // Flame angles increase clockwise, so add positive roll.
     final roll = speed * dt / (_tireDiameter / 2);
     for (final tire in _tires) {
-      tire.angle += roll;
+      tire.angle -= roll;
     }
 
     if (position.x + size.x < 0) onLeftScreen();
