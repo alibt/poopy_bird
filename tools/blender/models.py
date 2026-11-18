@@ -758,28 +758,47 @@ def build_medal(*, with_outline: bool = True) -> bpy.types.Object:
 
 
 def build_tire(*, with_outline: bool = True) -> bpy.types.Object:
-    rubber = toon_material("tire", (0.08, 0.08, 0.09, 1.0), steps=2)
-    hub = toon_material("tire_hub", (0.75, 0.75, 0.78, 1.0), steps=2)
-    rim = toon_material("tire_rim", (0.4, 0.4, 0.42, 1.0), steps=2)
-    tire = mesh_cylinder("tire", 0.52, 0.24, (0, 0, 0), rubber, vertices=24)
-    ring = mesh_cylinder("rim", 0.32, 0.26, (0, 0, 0), rim, vertices=16)
-    cap = mesh_cylinder("hub", 0.18, 0.28, (0, 0, 0), hub, vertices=12)
-    # Tread nubs.
-    nubs = []
-    for i in range(8):
-        a = i * (math.pi * 2 / 8)
-        nubs.append(
-            mesh_cube(
-                f"tread{i}",
-                (0.08, 0.26, 0.1),
-                (math.cos(a) * 0.5, 0, math.sin(a) * 0.5),
-                rubber,
-            )
+    """Circular face with bold 5-spoke hub so in-game spin is readable.
+
+    Built in the XZ plane, then tipped so a +Y camera sees the face.
+    """
+    rubber = toon_material("tire", (0.07, 0.07, 0.08, 1.0), steps=2)
+    hub = toon_material("tire_hub", (0.88, 0.88, 0.90, 1.0), steps=2)
+    rim = toon_material("tire_rim", (0.35, 0.35, 0.38, 1.0), steps=2)
+    spoke_mat = toon_material("tire_spoke", (0.95, 0.8, 0.18, 1.0), steps=2)
+    # Cylinder along Y so +Y camera looks straight at the circular face.
+    tire = mesh_cylinder(
+        "tire", 0.52, 0.22, (0, 0, 0), rubber, vertices=28,
+        rotation=(math.radians(90), 0, 0),
+    )
+    ring = mesh_cylinder(
+        "rim", 0.34, 0.24, (0, 0, 0), rim, vertices=20,
+        rotation=(math.radians(90), 0, 0),
+    )
+    cap = mesh_cylinder(
+        "hub", 0.14, 0.28, (0, 0, 0), hub, vertices=14,
+        rotation=(math.radians(90), 0, 0),
+    )
+    parts = [tire, ring, cap]
+    for i in range(5):
+        a = i * (math.pi * 2 / 5)
+        spoke = mesh_cube(
+            f"spoke{i}",
+            (0.3, 0.1, 0.09),
+            (math.cos(a) * 0.2, 0.02, math.sin(a) * 0.2),
+            spoke_mat,
         )
-    root = join_objects([tire, ring, cap, *nubs], "tire")
-    root.rotation_euler = Euler((0, math.radians(90), 0))
-    apply_loc_rot_scale(root)
-    return root
+        spoke.rotation_euler = Euler((0, 0, a))
+        apply_loc_rot_scale(spoke)
+        parts.append(spoke)
+    # Valve stem — off-center cue for spin.
+    parts.append(
+        mesh_uv_sphere(
+            "valve", 0.06, (0.0, 0.06, 0.42), hub,
+            segments=10, ring_count=8,
+        )
+    )
+    return join_objects(parts, "tire")
 
 
 def build_skyline_tile(*, seed: int, near: bool, length: float = 12.0):

@@ -112,9 +112,10 @@ class Bird extends PositionComponent
 
     velocityY += GameConfig.gravity * dt;
 
-    // Settle toward cruise so you aren't flapping every second to stay up.
-    // After a hop, hang briefly so food is grab-able, then drift back down.
-    final cruise = game.cruiseY;
+    // Settle toward a gently bobbing cruise — stable, but aim isn't frozen.
+    final bob = sin(game.elapsed * GameConfig.cruiseBobHz * pi * 2) *
+        GameConfig.cruiseBobAmplitude;
+    final cruise = game.cruiseY + bob;
     final settling = _sinceFlap >= GameConfig.flapHangTime;
     if (settling) {
       final delta = cruise - position.y;

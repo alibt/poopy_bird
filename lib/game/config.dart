@@ -16,6 +16,10 @@ abstract final class GameConfig {
   /// Seconds after a flap before settle-down toward cruise kicks in.
   static const double flapHangTime = 0.35;
 
+  /// Gentle vertical bob on cruise so aiming isn't a static hover.
+  static const double cruiseBobAmplitude = 10;
+  static const double cruiseBobHz = 0.55;
+
   // Poop
   static const double poopCooldown = 0.5;
   static const double rapidFireCooldown = 0.12;
@@ -52,8 +56,8 @@ abstract final class GameConfig {
   static const double roadHeightFraction = 0.48;
 
   /// Where each lane's cars stand, as a fraction of road height from the road
-  /// top. Lane 0 is the far lane, lane 1 is nearest the viewer.
-  static const List<double> laneBaselines = [0.40, 0.86];
+  /// top. Symmetric around 0.5 so the dashed divider sits in the visual center.
+  static const List<double> laneBaselines = [0.30, 0.70];
 
   // Cars
   /// Minimum empty space between two cars in the same lane at spawn time.
