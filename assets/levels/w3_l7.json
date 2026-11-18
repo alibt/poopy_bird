@@ -1,0 +1,57 @@
+{
+  "id": "w3_l7",
+  "version": 1,
+  "name": "Breakdown",
+  "description": "Heavy sports traffic. Burritos help.",
+  "timeLimit": 59,
+  "scrollSpeed": 175,
+  "rageFillPerEscape": 0.19,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 59,
+      "interval": 1.6,
+      "groundSpeed": [
+        10,
+        85
+      ],
+      "cars": {
+        "sportsCar": 4,
+        "washed": 2,
+        "police": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 20
+    },
+    {
+      "type": "reachCombo",
+      "count": 4
+    },
+    {
+      "type": "reachCombo",
+      "count": 4
+    }
+  ],
+  "stars": {
+    "two": 2550,
+    "three": 3750
+  }
+}

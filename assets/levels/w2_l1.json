@@ -1,0 +1,45 @@
+{
+  "id": "w2_l1",
+  "version": 1,
+  "name": "Meter Drop",
+  "description": "Taxis rule these blocks. Learn their rhythm.",
+  "timeLimit": 47,
+  "scrollSpeed": 125,
+  "rageFillPerEscape": 0.14,
+  "food": {
+    "types": [
+      "berries"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 47,
+      "interval": 2.3,
+      "groundSpeed": [
+        10,
+        55
+      ],
+      "cars": {
+        "sedan": 3,
+        "taxi": 3
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 8
+    }
+  ],
+  "stars": {
+    "two": 1050,
+    "three": 1650
+  }
+}

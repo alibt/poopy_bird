@@ -1,0 +1,58 @@
+{
+  "id": "w5_boss",
+  "version": 1,
+  "name": "Monster Truck",
+  "isBoss": true,
+  "endWhenObjectivesMet": true,
+  "description": "The final boss. Twelve hits. Police cars will spike your rage if you splat them.",
+  "timeLimit": 100,
+  "scrollSpeed": 175,
+  "rageFillPerEscape": 0.22,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 100,
+      "interval": 2.4,
+      "groundSpeed": [
+        0,
+        45
+      ],
+      "cars": {
+        "police": 2,
+        "taxi": 2,
+        "sportsCar": 2,
+        "washed": 1
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "scriptedSpawns": [
+    {
+      "at": 3,
+      "car": "monsterTruck",
+      "lane": 2,
+      "groundSpeed": 20
+    }
+  ],
+  "objectives": [
+    {
+      "type": "defeatBoss"
+    }
+  ],
+  "stars": {
+    "two": 3000,
+    "three": 4500
+  }
+}

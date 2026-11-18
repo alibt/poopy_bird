@@ -1,0 +1,53 @@
+{
+  "id": "w4_l6",
+  "version": 1,
+  "name": "Parade Prep",
+  "description": "A wedding limo might roll by.",
+  "timeLimit": 57,
+  "scrollSpeed": 155,
+  "rageFillPerEscape": 0.18,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 57,
+      "interval": 1.7,
+      "groundSpeed": [
+        10,
+        80
+      ],
+      "cars": {
+        "convertible": 2,
+        "sunroof": 2,
+        "washed": 2,
+        "weddingLimo": 1
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 18
+    },
+    {
+      "type": "reachCombo",
+      "count": 4
+    }
+  ],
+  "stars": {
+    "two": 2300,
+    "three": 3400
+  }
+}

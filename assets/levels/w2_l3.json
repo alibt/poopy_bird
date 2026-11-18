@@ -1,0 +1,48 @@
+{
+  "id": "w2_l3",
+  "version": 1,
+  "name": "Bus Lane",
+  "description": "Buses need three hits. Lead your poops.",
+  "timeLimit": 51,
+  "scrollSpeed": 134,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 51,
+      "interval": 2.0,
+      "groundSpeed": [
+        10,
+        65
+      ],
+      "cars": {
+        "sedan": 2,
+        "taxi": 3,
+        "bus": 2
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 12
+    }
+  ],
+  "stars": {
+    "two": 1550,
+    "three": 2350
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "id": "w3_l6",
+  "version": 1,
+  "name": "Cruise Control",
+  "description": "Long stretch. Manage ammo carefully.",
+  "timeLimit": 57,
+  "scrollSpeed": 170,
+  "rageFillPerEscape": 0.19,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 57,
+      "interval": 1.7,
+      "groundSpeed": [
+        10,
+        80
+      ],
+      "cars": {
+        "sportsCar": 4,
+        "washed": 2,
+        "police": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 18
+    },
+    {
+      "type": "reachCombo",
+      "count": 4
+    }
+  ],
+  "stars": {
+    "two": 2300,
+    "three": 3400
+  }
+}

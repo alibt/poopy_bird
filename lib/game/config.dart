@@ -42,7 +42,8 @@ abstract final class GameConfig {
 
   /// Where each lane's cars stand, as a fraction of road height from the road
   /// top. Lane 0 is the far lane, the last lane is nearest the viewer.
-  static const List<double> laneBaselines = [0.42, 0.9];
+  /// Worlds 1–2 use lanes 0–1; Highway (world 3+) can also use lane 2.
+  static const List<double> laneBaselines = [0.28, 0.58, 0.9];
 
   // Cars
   /// Minimum empty space between two cars in the same lane at spawn time.

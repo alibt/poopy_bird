@@ -22,9 +22,12 @@ void main() {
     }
   });
 
-  test('World 1 has 8 levels and a boss; later worlds are coming soon', () {
-    expect(worlds.first.levelIds, hasLength(9));
-    expect(worlds.skip(1).every((w) => w.comingSoon), isTrue);
+  test('each world has 8 levels and a boss', () {
+    expect(worlds, hasLength(5));
+    for (final world in worlds) {
+      expect(world.comingSoon, isFalse, reason: world.id);
+      expect(world.levelIds, hasLength(9), reason: world.id);
+    }
   });
 
   test('level ids are unique across worlds', () {

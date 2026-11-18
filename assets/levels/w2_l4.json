@@ -1,0 +1,48 @@
+{
+  "id": "w2_l4",
+  "version": 1,
+  "name": "Gridlock",
+  "description": "Dense traffic. Watch the rage meter.",
+  "timeLimit": 53,
+  "scrollSpeed": 138,
+  "rageFillPerEscape": 0.16,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 53,
+      "interval": 1.9,
+      "groundSpeed": [
+        10,
+        70
+      ],
+      "cars": {
+        "sedan": 2,
+        "taxi": 3,
+        "bus": 2
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 14
+    }
+  ],
+  "stars": {
+    "two": 1800,
+    "three": 2700
+  }
+}

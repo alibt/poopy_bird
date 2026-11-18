@@ -1,0 +1,54 @@
+{
+  "id": "w5_l8",
+  "version": 1,
+  "name": "Before Dawn",
+  "description": "Last level before the monster.",
+  "timeLimit": 61,
+  "scrollSpeed": 175,
+  "rageFillPerEscape": 0.22,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 61,
+      "interval": 1.5,
+      "groundSpeed": [
+        10,
+        90
+      ],
+      "cars": {
+        "police": 3,
+        "weddingLimo": 1,
+        "sportsCar": 2,
+        "bus": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 22
+    },
+    {
+      "type": "reachCombo",
+      "count": 5
+    }
+  ],
+  "stars": {
+    "two": 2800,
+    "three": 4100
+  }
+}

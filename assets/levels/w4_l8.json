@@ -1,0 +1,53 @@
+{
+  "id": "w4_l8",
+  "version": 1,
+  "name": "Tide Coming In",
+  "description": "Final boardwalk push.",
+  "timeLimit": 61,
+  "scrollSpeed": 165,
+  "rageFillPerEscape": 0.19,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 61,
+      "interval": 1.5,
+      "groundSpeed": [
+        10,
+        90
+      ],
+      "cars": {
+        "convertible": 2,
+        "sunroof": 2,
+        "washed": 2,
+        "weddingLimo": 1
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 22
+    },
+    {
+      "type": "reachCombo",
+      "count": 5
+    }
+  ],
+  "stars": {
+    "two": 2800,
+    "three": 4100
+  }
+}

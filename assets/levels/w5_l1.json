@@ -1,0 +1,48 @@
+{
+  "id": "w5_l1",
+  "version": 1,
+  "name": "Neon Start",
+  "description": "Night streets. Police are out.",
+  "timeLimit": 47,
+  "scrollSpeed": 140,
+  "rageFillPerEscape": 0.17,
+  "food": {
+    "types": [
+      "berries",
+      "chili"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 47,
+      "interval": 2.3,
+      "groundSpeed": [
+        10,
+        55
+      ],
+      "cars": {
+        "sedan": 2,
+        "taxi": 2,
+        "police": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 8
+    }
+  ],
+  "stars": {
+    "two": 1050,
+    "three": 1650
+  }
+}

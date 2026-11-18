@@ -1,0 +1,49 @@
+{
+  "id": "w3_l4",
+  "version": 1,
+  "name": "Speed Trap",
+  "description": "Police join the mix. Hitting them raises rage!",
+  "timeLimit": 53,
+  "scrollSpeed": 160,
+  "rageFillPerEscape": 0.18,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 53,
+      "interval": 1.9,
+      "groundSpeed": [
+        10,
+        70
+      ],
+      "cars": {
+        "sportsCar": 3,
+        "sedan": 2,
+        "washed": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 14
+    }
+  ],
+  "stars": {
+    "two": 1800,
+    "three": 2700
+  }
+}

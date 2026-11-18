@@ -1,0 +1,50 @@
+{
+  "id": "w5_l3",
+  "version": 1,
+  "name": "After Hours",
+  "description": "Taxis and sports cars under neon.",
+  "timeLimit": 51,
+  "scrollSpeed": 150,
+  "rageFillPerEscape": 0.18,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 51,
+      "interval": 2.0,
+      "groundSpeed": [
+        10,
+        65
+      ],
+      "cars": {
+        "police": 2,
+        "taxi": 2,
+        "sportsCar": 2,
+        "washed": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 12
+    }
+  ],
+  "stars": {
+    "two": 1550,
+    "three": 2350
+  }
+}

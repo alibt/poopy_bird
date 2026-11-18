@@ -1,0 +1,56 @@
+{
+  "id": "w2_boss",
+  "version": 1,
+  "name": "Rush Hour",
+  "isBoss": true,
+  "endWhenObjectivesMet": true,
+  "description": "A stubborn downtown bus. It takes 7 poops \u2014 keep taxis from escaping while you work.",
+  "timeLimit": 100,
+  "scrollSpeed": 155,
+  "rageFillPerEscape": 0.18,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 100,
+      "interval": 2.4,
+      "groundSpeed": [
+        0,
+        45
+      ],
+      "cars": {
+        "sedan": 2,
+        "taxi": 3,
+        "bus": 2
+      },
+      "lanes": [
+        0
+      ]
+    }
+  ],
+  "scriptedSpawns": [
+    {
+      "at": 3,
+      "car": "rushHourBus",
+      "lane": 1,
+      "groundSpeed": 20
+    }
+  ],
+  "objectives": [
+    {
+      "type": "defeatBoss"
+    }
+  ],
+  "stars": {
+    "two": 3000,
+    "three": 4500
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "w3_l2",
+  "version": 1,
+  "name": "Fast Lane",
+  "description": "Three lanes of highway traffic.",
+  "timeLimit": 49,
+  "scrollSpeed": 150,
+  "rageFillPerEscape": 0.17,
+  "food": {
+    "types": [
+      "berries",
+      "chili"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 49,
+      "interval": 2.2,
+      "groundSpeed": [
+        10,
+        60
+      ],
+      "cars": {
+        "sedan": 2,
+        "sportsCar": 3
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 10
+    }
+  ],
+  "stars": {
+    "two": 1300,
+    "three": 2000
+  }
+}

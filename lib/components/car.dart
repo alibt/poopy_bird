@@ -63,32 +63,32 @@ class Car extends PositionComponent
   /// override this.
   Future<void> buildVisuals() async {
     final bodySprite = await game.loadSprite(type.bodyAsset!);
-    final tireSprite = await game.loadSprite('tire.png');
-    final bodyHeight = size.y - _tireDiameter / 2;
-
     // The artwork faces right but traffic drives left, so mirror the visuals.
     final visuals = PositionComponent(
       size: size,
       position: Vector2(size.x, 0),
       scale: Vector2(-1, 1),
     );
-    final body = SpriteComponent(
-      sprite: bodySprite,
-      size: Vector2(size.x, bodyHeight),
-    );
-    if (type.hueShift != 0) {
-      body.paint.colorFilter = hueRotation(type.hueShift);
-    }
-    visuals.add(body);
-    for (final x in const [0.19, 0.775]) {
-      final tire = SpriteComponent(
-        sprite: tireSprite,
-        size: Vector2.all(_tireDiameter),
-        position: Vector2(size.x * x, bodyHeight),
-        anchor: Anchor.center,
-      );
-      _tires.add(tire);
-      visuals.add(tire);
+
+    if (type.wheelsInSprite) {
+      visuals.add(SpriteComponent(sprite: bodySprite, size: size.clone()));
+    } else {
+      final tireSprite = await game.loadSprite('tire.png');
+      final bodyHeight = size.y - _tireDiameter / 2;
+      visuals.add(SpriteComponent(
+        sprite: bodySprite,
+        size: Vector2(size.x, bodyHeight),
+      ));
+      for (final x in const [0.19, 0.775]) {
+        final tire = SpriteComponent(
+          sprite: tireSprite,
+          size: Vector2.all(_tireDiameter),
+          position: Vector2(size.x * x, bodyHeight),
+          anchor: Anchor.center,
+        );
+        _tires.add(tire);
+        visuals.add(tire);
+      }
     }
     add(visuals);
   }
@@ -126,6 +126,9 @@ class Car extends PositionComponent
     _marks.clear();
   }
 
+  static final Paint _hpBack = Paint()..color = const Color(0x88000000);
+  static final Paint _hpFill = Paint()..color = const Color(0xFFFF5252);
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -140,6 +143,18 @@ class Car extends PositionComponent
     }
 
     if (position.x + size.x < 0) onLeftScreen();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    if (!type.isBoss || type.hitPoints <= 1) return;
+    final remaining = 1 - hitsTaken / type.hitPoints;
+    canvas.drawRect(Rect.fromLTWH(size.x * 0.2, -14, size.x * 0.6, 7), _hpBack);
+    canvas.drawRect(
+      Rect.fromLTWH(size.x * 0.2, -14, size.x * 0.6 * remaining, 7),
+      _hpFill,
+    );
   }
 
   /// Called once the car has fully left the screen on the left.

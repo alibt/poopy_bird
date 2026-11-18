@@ -198,7 +198,14 @@ class CoinCount extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.monetization_on_rounded, color: coinGold, size: size),
+        Image.asset(
+          'assets/images/coin.png',
+          width: size,
+          height: size,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.monetization_on_rounded, color: coinGold, size: size),
+        ),
         const SizedBox(width: 2),
         Text(
           '$coins',

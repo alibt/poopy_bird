@@ -1,0 +1,56 @@
+{
+  "id": "w4_boss",
+  "version": 1,
+  "name": "Boardwalk Wedding",
+  "isBoss": true,
+  "endWhenObjectivesMet": true,
+  "description": "A wedding limo crawling the boardwalk. Eight hits \u2014 convertibles keep rolling past.",
+  "timeLimit": 100,
+  "scrollSpeed": 165,
+  "rageFillPerEscape": 0.19,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 100,
+      "interval": 2.4,
+      "groundSpeed": [
+        0,
+        45
+      ],
+      "cars": {
+        "convertible": 3,
+        "sunroof": 2,
+        "washed": 2
+      },
+      "lanes": [
+        0
+      ]
+    }
+  ],
+  "scriptedSpawns": [
+    {
+      "at": 3,
+      "car": "boardwalkLimo",
+      "lane": 1,
+      "groundSpeed": 20
+    }
+  ],
+  "objectives": [
+    {
+      "type": "defeatBoss"
+    }
+  ],
+  "stars": {
+    "two": 3000,
+    "three": 4500
+  }
+}

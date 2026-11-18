@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flame/components.dart';
 
 import '../game/poopy_bird_game.dart';
@@ -23,20 +21,14 @@ class Scenery extends Component with HasGameReference<PoopyBirdGame> {
     CloudLayer(),
     SkylineLayer(
       factor: 0.2,
-      seed: 1,
-      color: const Color(0xFFB3CDE0),
-      windowColor: const Color(0xFFCFE0EC),
-      minHeight: 0.35,
-      maxHeight: 0.7,
+      asset: 'bg_skyline_far.png',
+      heightFraction: 0.7,
       priority: -20,
     ),
     SkylineLayer(
       factor: 0.5,
-      seed: 2,
-      color: const Color(0xFF7F9DB5),
-      windowColor: const Color(0xFFF3E9A6),
-      minHeight: 0.2,
-      maxHeight: 0.45,
+      asset: 'bg_skyline_near.png',
+      heightFraction: 0.45,
       priority: -10,
     ),
   ];

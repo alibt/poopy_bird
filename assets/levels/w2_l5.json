@@ -1,0 +1,48 @@
+{
+  "id": "w2_l5",
+  "version": 1,
+  "name": "Express",
+  "description": "Chili helps \u2014 rapid fire through the jam.",
+  "timeLimit": 55,
+  "scrollSpeed": 142,
+  "rageFillPerEscape": 0.16,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 55,
+      "interval": 1.8,
+      "groundSpeed": [
+        10,
+        75
+      ],
+      "cars": {
+        "sedan": 2,
+        "taxi": 3,
+        "bus": 2
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 16
+    }
+  ],
+  "stars": {
+    "two": 2050,
+    "three": 3050
+  }
+}

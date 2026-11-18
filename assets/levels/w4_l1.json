@@ -1,0 +1,47 @@
+{
+  "id": "w4_l1",
+  "version": 1,
+  "name": "Ocean Drive",
+  "description": "Convertibles with the top down \u2014 double points.",
+  "timeLimit": 47,
+  "scrollSpeed": 130,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 47,
+      "interval": 2.3,
+      "groundSpeed": [
+        10,
+        55
+      ],
+      "cars": {
+        "sedan": 2,
+        "convertible": 3
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 5,
+      "carType": "convertible"
+    }
+  ],
+  "stars": {
+    "two": 1050,
+    "three": 1650
+  }
+}

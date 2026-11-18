@@ -2,10 +2,11 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 
+import '../game/config.dart';
 import '../game/poopy_bird_game.dart';
 
-/// The road, drawn from the road top to the bottom of the screen, with a
-/// dashed lane divider that scrolls by [scrollOffset].
+/// The road, drawn from the road top to the bottom of the screen, with
+/// dashed lane dividers that scroll by [scrollOffset].
 class Street extends Component with HasGameReference<PoopyBirdGame> {
   Street() : super(priority: 0);
 
@@ -28,10 +29,14 @@ class Street extends Component with HasGameReference<PoopyBirdGame> {
     canvas.drawRect(Rect.fromLTRB(0, top, width, game.size.y), _road);
     canvas.drawRect(Rect.fromLTWH(0, top, width, _curbHeight), _curb);
 
-    final y = top + game.roadHeight * 0.5;
-    const period = _dashLength + _dashGap;
-    for (var x = -(scrollOffset % period); x < width; x += period) {
-      canvas.drawLine(Offset(x, y), Offset(x + _dashLength, y), _dash);
+    final baselines = GameConfig.laneBaselines;
+    // Divider between each consecutive pair of lanes.
+    for (var i = 0; i < baselines.length - 1; i++) {
+      final y = top + game.roadHeight * ((baselines[i] + baselines[i + 1]) / 2);
+      const period = _dashLength + _dashGap;
+      for (var x = -(scrollOffset % period); x < width; x += period) {
+        canvas.drawLine(Offset(x, y), Offset(x + _dashLength, y), _dash);
+      }
     }
   }
 }

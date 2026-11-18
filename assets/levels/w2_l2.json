@@ -1,0 +1,50 @@
+{
+  "id": "w2_l2",
+  "version": 1,
+  "name": "Yellow Wave",
+  "description": "More taxis. Keep your combo alive.",
+  "timeLimit": 49,
+  "scrollSpeed": 129,
+  "rageFillPerEscape": 0.15,
+  "food": {
+    "types": [
+      "berries"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 49,
+      "interval": 2.2,
+      "groundSpeed": [
+        10,
+        60
+      ],
+      "cars": {
+        "sedan": 3,
+        "taxi": 3
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 10
+    },
+    {
+      "type": "splatCars",
+      "count": 6,
+      "carType": "taxi"
+    }
+  ],
+  "stars": {
+    "two": 1300,
+    "three": 2000
+  }
+}

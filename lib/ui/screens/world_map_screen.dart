@@ -77,7 +77,7 @@ class _WorldCard extends StatelessWidget {
             : 'Complete the previous world';
 
     return SizedBox(
-      width: 190,
+      width: 200,
       child: Material(
         color: unlocked ? Colors.white : Colors.white54,
         shape: RoundedRectangleBorder(
@@ -92,7 +92,7 @@ class _WorldCard extends StatelessWidget {
                   ))
               : null,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -105,19 +105,27 @@ class _WorldCard extends StatelessWidget {
                 Text(
                   world.name,
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: brandBrown,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 if (status == null)
                   StarCount(earned: stars, total: world.levelIds.length * 3)
                 else ...[
-                  const Icon(Icons.lock_rounded, color: brandBrown, size: 32),
+                  const Icon(Icons.lock_rounded, color: brandBrown, size: 28),
                   const SizedBox(height: 4),
-                  Text(status, textAlign: TextAlign.center),
+                  Text(
+                    status,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ],
               ],
             ),

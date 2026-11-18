@@ -119,7 +119,7 @@ class PoopyBirdGame extends FlameGame
     camera.viewfinder.anchor = Anchor.topLeft;
 
     final frames = await Future.wait([
-      for (var i = 1; i <= 8; i++) loadSprite('frame-$i.png'),
+      for (var i = 1; i <= 8; i++) loadSprite('bird_${i.toString().padLeft(2, '0')}.png'),
     ]);
     bird = Bird(animation: SpriteAnimation.spriteList(frames, stepTime: 0.1));
     if (loadout.birdHue != 0) {
@@ -301,7 +301,16 @@ class PoopyBirdGame extends FlameGame
     final multiplier = combo.registerHit();
     final points =
         score.registerHit(basePoints: car.type.points, multiplier: multiplier);
-    rage.onCarSplatted();
+    if (car.type.raisesRageOnHit) {
+      rage.onCarEscaped();
+      stats.onRage(rage.value);
+      if (rage.isFull) {
+        finish(RunOutcome.rageOut);
+        return;
+      }
+    } else {
+      rage.onCarSplatted();
+    }
     objectives.onCombo(combo.count);
     world.add(FloatingText(
       multiplier > 1 ? '+$points  x$multiplier' : '+$points',

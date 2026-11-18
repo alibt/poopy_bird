@@ -180,9 +180,11 @@ Check the licence of the current placeholder art before any release; it will all
 - [x] Endless leaderboard-ready scoring: run ids, rules version, distance/stats on `LevelResult`, personal top-10, recurring Car Wash Truck visits
 
 ### M5 — Art and content
-- [ ] Blender pipeline scripts in `tools/blender/`
-- [ ] New bird, car variants, food, coins, trophies, backgrounds
-- [ ] Worlds 2–5 + bosses
+- [x] Blender pipeline scripts in `tools/blender/`
+- [x] New bird, car variants, food, coins, trophies, backgrounds
+- [x] Worlds 2–5 + bosses
+
+Remaining polish (not blocking M5): hazard sprites (power lines, crows, drones, sprinklers), coffee / golden-seed food, sunroof open/close timing, mayor limo weak spots, world-tinted parallax plates.
 
 ### M6 — Polish
 - [ ] Music and SFX

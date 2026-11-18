@@ -1,0 +1,53 @@
+{
+  "id": "w3_l3",
+  "version": 1,
+  "name": "Overdrive",
+  "description": "Washed cars are worth triple \u2014 prioritize them.",
+  "timeLimit": 51,
+  "scrollSpeed": 155,
+  "rageFillPerEscape": 0.17,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 51,
+      "interval": 2.0,
+      "groundSpeed": [
+        10,
+        65
+      ],
+      "cars": {
+        "sportsCar": 3,
+        "sedan": 2,
+        "washed": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 12
+    },
+    {
+      "type": "reachCombo",
+      "count": 4
+    }
+  ],
+  "stars": {
+    "two": 1550,
+    "three": 2350
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "id": "w5_l2",
+  "version": 1,
+  "name": "Sirens",
+  "description": "Hitting police fills rage \u2014 dodge or suffer.",
+  "timeLimit": 49,
+  "scrollSpeed": 145,
+  "rageFillPerEscape": 0.18,
+  "food": {
+    "types": [
+      "berries",
+      "chili"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 49,
+      "interval": 2.2,
+      "groundSpeed": [
+        10,
+        60
+      ],
+      "cars": {
+        "sedan": 2,
+        "taxi": 2,
+        "police": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 10
+    },
+    {
+      "type": "maxEscapes",
+      "count": 6
+    }
+  ],
+  "stars": {
+    "two": 1300,
+    "three": 2000
+  }
+}

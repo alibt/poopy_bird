@@ -246,7 +246,18 @@ class ObjectiveDefinition {
   static String _carLabel(CarType type) => switch (type) {
         CarType.sedan => 'sedans',
         CarType.sportsCar => 'sports cars',
+        CarType.convertible => 'convertibles',
+        CarType.washed => 'washed cars',
+        CarType.bus => 'buses',
+        CarType.taxi => 'taxis',
+        CarType.weddingLimo => 'wedding limos',
+        CarType.police => 'police cars',
+        CarType.sunroof => 'sunroof cars',
         CarType.carWashTruck => 'car wash trucks',
+        CarType.rushHourBus => 'rush-hour buses',
+        CarType.mayorLimo => "mayor's limos",
+        CarType.boardwalkLimo => 'boardwalk limos',
+        CarType.monsterTruck => 'monster trucks',
       };
 
   factory ObjectiveDefinition.fromJson(Map<String, dynamic> json) {

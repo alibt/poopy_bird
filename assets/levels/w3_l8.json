@@ -1,0 +1,53 @@
+{
+  "id": "w3_l8",
+  "version": 1,
+  "name": "Toll Booth",
+  "description": "Survive the highway gauntlet.",
+  "timeLimit": 61,
+  "scrollSpeed": 180,
+  "rageFillPerEscape": 0.2,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 61,
+      "interval": 1.5,
+      "groundSpeed": [
+        10,
+        90
+      ],
+      "cars": {
+        "sportsCar": 4,
+        "washed": 2,
+        "police": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 22
+    },
+    {
+      "type": "reachCombo",
+      "count": 5
+    }
+  ],
+  "stars": {
+    "two": 2800,
+    "three": 4100
+  }
+}

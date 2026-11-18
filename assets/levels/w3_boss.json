@@ -1,0 +1,57 @@
+{
+  "id": "w3_boss",
+  "version": 1,
+  "name": "Mayor's Limo",
+  "isBoss": true,
+  "endWhenObjectivesMet": true,
+  "description": "The mayor's armored limo. Ten hits. Don't let the sports cars distract you.",
+  "timeLimit": 100,
+  "scrollSpeed": 180,
+  "rageFillPerEscape": 0.2,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 100,
+      "interval": 2.4,
+      "groundSpeed": [
+        0,
+        45
+      ],
+      "cars": {
+        "sportsCar": 3,
+        "sedan": 2,
+        "washed": 1
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "scriptedSpawns": [
+    {
+      "at": 3,
+      "car": "mayorLimo",
+      "lane": 2,
+      "groundSpeed": 20
+    }
+  ],
+  "objectives": [
+    {
+      "type": "defeatBoss"
+    }
+  ],
+  "stars": {
+    "two": 3000,
+    "three": 4500
+  }
+}

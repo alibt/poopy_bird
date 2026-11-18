@@ -10,6 +10,7 @@ import 'package:poopy_bird/game/poopy_bird_game.dart';
 import 'package:poopy_bird/progress/level_result.dart';
 import 'package:poopy_bird/progress/player_progress.dart';
 import 'package:poopy_bird/progress/progress_repository.dart';
+import 'package:poopy_bird/ui/widgets.dart';
 
 ProgressController _controller([PlayerProgress? progress]) =>
     ProgressController(
@@ -68,7 +69,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('World Map'), findsOneWidget);
     expect(find.text('Suburbs'), findsOneWidget);
-    expect(find.text('Coming soon'), findsWidgets);
+    expect(find.text('Downtown'), findsOneWidget);
+    expect(find.text('Complete the previous world'), findsWidgets);
 
     await tester.tap(find.text('Suburbs'));
     await tester.pumpAndSettle();
@@ -219,6 +221,6 @@ void main() {
 
     expect(find.text('Crash!'), findsOneWidget);
     expect(controller.progress.recordFor('w1_l1').plays, 1);
-    expect(find.byIcon(Icons.monetization_on_rounded), findsWidgets);
+    expect(find.byType(CoinCount), findsWidgets);
   });
 }

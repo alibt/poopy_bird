@@ -93,7 +93,21 @@ class _TrophyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.emoji_events_rounded, color: _metal, size: 32),
+              Image.asset(
+                switch (trophy.tier) {
+                  TrophyTier.gold => 'assets/images/trophy_gold.png',
+                  TrophyTier.silver => 'assets/images/trophy_silver.png',
+                  TrophyTier.bronze => 'assets/images/trophy_bronze.png',
+                  TrophyTier.none => 'assets/images/medal.png',
+                },
+                width: 36,
+                height: 36,
+                color: trophy.tier == TrophyTier.none ? _metal : null,
+                colorBlendMode:
+                    trophy.tier == TrophyTier.none ? BlendMode.srcIn : null,
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.emoji_events_rounded, color: _metal, size: 32),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

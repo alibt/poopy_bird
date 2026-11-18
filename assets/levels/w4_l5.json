@@ -1,0 +1,49 @@
+{
+  "id": "w4_l5",
+  "version": 1,
+  "name": "Sprinkler Skip",
+  "description": "Stay high, splat clean.",
+  "timeLimit": 55,
+  "scrollSpeed": 150,
+  "rageFillPerEscape": 0.17,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 55,
+      "interval": 1.8,
+      "groundSpeed": [
+        10,
+        75
+      ],
+      "cars": {
+        "convertible": 3,
+        "sunroof": 2,
+        "washed": 2
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 9,
+      "carType": "convertible"
+    }
+  ],
+  "stars": {
+    "two": 2050,
+    "three": 3050
+  }
+}

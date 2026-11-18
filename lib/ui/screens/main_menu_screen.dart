@@ -37,7 +37,7 @@ class MainMenuScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/images/frame-1.png', height: 170),
+                  Image.asset('assets/images/bird_01.png', height: 170),
                   const SizedBox(width: 24),
                   Column(
                     mainAxisSize: MainAxisSize.min,

@@ -1,0 +1,54 @@
+{
+  "id": "w5_l5",
+  "version": 1,
+  "name": "Curfew",
+  "description": "Heavy police presence.",
+  "timeLimit": 55,
+  "scrollSpeed": 160,
+  "rageFillPerEscape": 0.2,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 55,
+      "interval": 1.8,
+      "groundSpeed": [
+        10,
+        75
+      ],
+      "cars": {
+        "police": 2,
+        "taxi": 2,
+        "sportsCar": 2,
+        "washed": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 16
+    },
+    {
+      "type": "maxEscapes",
+      "count": 6
+    }
+  ],
+  "stars": {
+    "two": 2050,
+    "three": 3050
+  }
+}

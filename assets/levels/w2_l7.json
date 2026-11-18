@@ -1,0 +1,52 @@
+{
+  "id": "w2_l7",
+  "version": 1,
+  "name": "Double Decker Day",
+  "description": "Buses and taxis together. Stay calm.",
+  "timeLimit": 59,
+  "scrollSpeed": 151,
+  "rageFillPerEscape": 0.17,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 59,
+      "interval": 1.6,
+      "groundSpeed": [
+        10,
+        85
+      ],
+      "cars": {
+        "taxi": 3,
+        "bus": 2,
+        "sportsCar": 1
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 20
+    },
+    {
+      "type": "reachCombo",
+      "count": 4
+    }
+  ],
+  "stars": {
+    "two": 2550,
+    "three": 3750
+  }
+}

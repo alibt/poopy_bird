@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/particles.dart';
-import 'package:flutter/painting.dart' show FontWeight, TextStyle;
 
 import 'car.dart';
 import 'effects.dart';
@@ -11,7 +10,7 @@ import 'effects.dart';
 /// World 1 boss. A big, slow truck that takes [CarType.hitPoints] poops.
 /// Every few seconds it sprays water that washes nearby cars clean, so they
 /// count as escapes again. If it drives off-screen undefeated it loops back
-/// around (in Endless, only once more). Placeholder art until M5.
+/// around (in Endless, only once more).
 class CarWashTruck extends Car {
   CarWashTruck({
     required super.lane,
@@ -26,31 +25,9 @@ class CarWashTruck extends Car {
   static const double _reentryGap = 160;
 
   double _untilSpray = sprayInterval;
-  double _wheelAngle = 0;
 
-  static final Paint _cab = Paint()..color = const Color(0xFF1565C0);
-  static final Paint _tank = Paint()..color = const Color(0xFF90CAF9);
-  static final Paint _stripe = Paint()..color = const Color(0xFFFFFFFF);
-  static final Paint _window = Paint()..color = const Color(0xFFB3E5FC);
-  static final Paint _brush = Paint()..color = const Color(0xFFFFEB3B);
-  static final Paint _tire = Paint()..color = const Color(0xFF212121);
-  static final Paint _hub = Paint()..color = const Color(0xFF9E9E9E);
   static final Paint _hpBack = Paint()..color = const Color(0x88000000);
   static final Paint _hpFill = Paint()..color = const Color(0xFFFF5252);
-  static final Paint _outline = Paint()
-    ..color = const Color(0xFF000000)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3;
-  static final TextPaint _label = TextPaint(
-    style: const TextStyle(
-      color: Color(0xFF0D47A1),
-      fontSize: 16,
-      fontWeight: FontWeight.w900,
-    ),
-  );
-
-  @override
-  Future<void> buildVisuals() async {}
 
   @override
   Vector2 splatPosition(int hit) {
@@ -62,7 +39,6 @@ class CarWashTruck extends Car {
   @override
   void update(double dt) {
     super.update(dt);
-    _wheelAngle -= speed * dt / 14;
     if (isSplatted || isRemoving) return;
     _untilSpray -= dt;
     if (_untilSpray <= 0) {
@@ -138,41 +114,8 @@ class CarWashTruck extends Car {
 
   @override
   void render(Canvas canvas) {
+    // Sprite body comes from [Car.buildVisuals]; draw the health bar above.
     final w = size.x;
-    final h = size.y;
-    final wheelY = h - 14;
-
-    // Tank body (rear) and cab (front, facing left).
-    final tank = RRect.fromLTRBR(
-        w * 0.28, h * 0.08, w, wheelY, const Radius.circular(10));
-    final cab =
-        RRect.fromLTRBR(0, h * 0.3, w * 0.3, wheelY, const Radius.circular(8));
-    canvas.drawRRect(tank, _tank);
-    canvas.drawRect(Rect.fromLTWH(w * 0.28, h * 0.42, w * 0.72, 10), _stripe);
-    canvas.drawRRect(cab, _cab);
-    canvas.drawRect(
-        Rect.fromLTWH(w * 0.04, h * 0.38, w * 0.15, h * 0.2), _window);
-    canvas.drawRRect(tank, _outline);
-    canvas.drawRRect(cab, _outline);
-    _label.render(canvas, 'CAR WASH', Vector2(w * 0.64, h * 0.27),
-        anchor: Anchor.center);
-
-    // Spinning brushes on the roof.
-    for (final x in [w * 0.45, w * 0.82]) {
-      canvas.drawCircle(Offset(x, h * 0.08), 10, _brush);
-      canvas.drawCircle(Offset(x, h * 0.08), 10, _outline);
-    }
-
-    // Wheels.
-    for (final x in [w * 0.15, w * 0.55, w * 0.85]) {
-      final c = Offset(x, wheelY);
-      canvas.drawCircle(c, 14, _tire);
-      canvas.drawCircle(c, 6, _hub);
-      final spoke = Offset(cos(_wheelAngle), sin(_wheelAngle)) * 10;
-      canvas.drawLine(c - spoke, c + spoke, _outline);
-    }
-
-    // Health bar.
     final remaining = 1 - hitsTaken / type.hitPoints;
     canvas.drawRect(Rect.fromLTWH(w * 0.2, -14, w * 0.6, 7), _hpBack);
     canvas.drawRect(

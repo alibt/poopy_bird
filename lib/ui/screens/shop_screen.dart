@@ -228,7 +228,7 @@ class _CosmeticCard extends StatelessWidget {
       CosmeticSlot.plumage => ColorFiltered(
           colorFilter: hueRotation(item.birdHue),
           child:
-              Image.asset('assets/images/frame-1.png', width: 56, height: 56),
+              Image.asset('assets/images/bird_01.png', width: 56, height: 56),
         ),
       CosmeticSlot.poop => Container(
           width: 40,

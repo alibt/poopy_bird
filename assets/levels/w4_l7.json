@@ -1,0 +1,53 @@
+{
+  "id": "w4_l7",
+  "version": 1,
+  "name": "Golden Hour",
+  "description": "Convertibles everywhere.",
+  "timeLimit": 59,
+  "scrollSpeed": 160,
+  "rageFillPerEscape": 0.18,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 59,
+      "interval": 1.6,
+      "groundSpeed": [
+        10,
+        85
+      ],
+      "cars": {
+        "convertible": 2,
+        "sunroof": 2,
+        "washed": 2,
+        "weddingLimo": 1
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 20
+    },
+    {
+      "type": "reachCombo",
+      "count": 4
+    }
+  ],
+  "stars": {
+    "two": 2550,
+    "three": 3750
+  }
+}

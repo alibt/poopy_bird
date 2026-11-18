@@ -1,0 +1,49 @@
+{
+  "id": "w3_l5",
+  "version": 1,
+  "name": "Drafting",
+  "description": "Keep a combo across three lanes.",
+  "timeLimit": 55,
+  "scrollSpeed": 165,
+  "rageFillPerEscape": 0.18,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 4,
+    "maxInterval": 7
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 55,
+      "interval": 1.8,
+      "groundSpeed": [
+        10,
+        75
+      ],
+      "cars": {
+        "sportsCar": 3,
+        "sedan": 2,
+        "washed": 1
+      },
+      "lanes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 16
+    }
+  ],
+  "stars": {
+    "two": 2050,
+    "three": 3050
+  }
+}

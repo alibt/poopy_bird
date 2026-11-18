@@ -1,0 +1,48 @@
+{
+  "id": "w4_l3",
+  "version": 1,
+  "name": "Fresh Wax",
+  "description": "Washed cars sparkle for \u00d73.",
+  "timeLimit": 51,
+  "scrollSpeed": 140,
+  "rageFillPerEscape": 0.16,
+  "food": {
+    "types": [
+      "berries",
+      "chili",
+      "burrito"
+    ],
+    "minInterval": 5,
+    "maxInterval": 9
+  },
+  "traffic": [
+    {
+      "from": 0,
+      "to": 51,
+      "interval": 2.0,
+      "groundSpeed": [
+        10,
+        65
+      ],
+      "cars": {
+        "convertible": 3,
+        "sunroof": 2,
+        "washed": 2
+      },
+      "lanes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "type": "splatCars",
+      "count": 12
+    }
+  ],
+  "stars": {
+    "two": 1550,
+    "three": 2350
+  }
+}
