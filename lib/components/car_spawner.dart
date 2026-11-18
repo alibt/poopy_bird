@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flame/components.dart';
 
 import '../game/config.dart';
@@ -74,8 +72,14 @@ class CarSpawner extends Component with HasGameReference<PoopyBirdGame> {
     if (ahead != null && !ahead.isRemoving && !ahead.isRemoved) {
       final gap = game.size.x - (ahead.position.x + ahead.size.x);
       if (gap < GameConfig.minCarGap) return null;
-      // Never drive faster than the car ahead, so lanes can't overlap.
-      speed = min(speed, ahead.speed);
+      // Soft match so a slow lead doesn't freeze the whole lane, but we
+      // still avoid stacking through a car within ~2.5s.
+      if (speed > ahead.speed) {
+        final closing = speed - ahead.speed;
+        if (closing > 1 && gap / closing < 2.5) {
+          speed = ahead.speed;
+        }
+      }
     }
 
     final position = Vector2(game.size.x, game.laneBaseline(lane));

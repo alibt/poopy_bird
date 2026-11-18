@@ -20,8 +20,8 @@
       "to": 12,
       "interval": 2.4,
       "groundSpeed": [
-        0,
-        50
+        70.0,
+        110.0
       ],
       "cars": {
         "sedan": 1
@@ -32,8 +32,8 @@
       "to": 50,
       "interval": 2.0,
       "groundSpeed": [
-        0,
-        60
+        70.0,
+        110.0
       ],
       "cars": {
         "sedan": 3,

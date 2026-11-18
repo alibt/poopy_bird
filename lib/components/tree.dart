@@ -1,20 +1,22 @@
-import 'dart:ui';
-
 import 'package:flame/components.dart';
 
-/// A roadside tree. Its position is the base of the trunk.
-class Tree extends PositionComponent {
-  Tree() : super(size: Vector2(80, 150), anchor: Anchor.bottomCenter);
+import '../game/poopy_bird_game.dart';
 
-  static final Paint _trunk = Paint()..color = const Color(0xFF8B4513);
-  static final Paint _leaves = Paint()..color = const Color(0xFF228B22);
+/// A roadside tree. Its position is the base of the trunk.
+class Tree extends SpriteComponent with HasGameReference<PoopyBirdGame> {
+  Tree({this.variant = 1})
+      : super(
+          size: Vector2(90, 150),
+          anchor: Anchor.bottomCenter,
+          priority: 2,
+        );
+
+  /// 1–3 tree sprite variants from the Blender export.
+  final int variant;
 
   @override
-  void render(Canvas canvas) {
-    canvas.drawRect(
-      Rect.fromLTWH(size.x / 2 - 10, size.y - 100, 20, 100),
-      _trunk,
-    );
-    canvas.drawCircle(Offset(size.x / 2, size.y - 100), 40, _leaves);
+  Future<void> onLoad() async {
+    final id = variant.clamp(1, 3).toString().padLeft(2, '0');
+    sprite = await game.loadSprite('tree_$id.png');
   }
 }

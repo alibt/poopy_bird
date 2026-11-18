@@ -1,13 +1,16 @@
+import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
 import 'package:flame/components.dart';
 
+import '../game/config.dart';
 import '../game/poopy_bird_game.dart';
 import '../systems/food.dart';
 import 'food_pickup.dart';
 
-/// Sends food in from the right every few seconds, at a random height in
-/// the sky, using the run plan's food settings.
+/// Sends food in from the right. Spawn height follows altitude pressure so
+/// ammo stays reachable when the bird is forced lower — with rooftop snacks
+/// as a riskier dive option near the road.
 class FoodSpawner extends Component with HasGameReference<PoopyBirdGame> {
   double _untilNext = 0;
 
@@ -34,9 +37,22 @@ class FoodSpawner extends Component with HasGameReference<PoopyBirdGame> {
   }
 
   FoodPickup spawn(FoodType type) {
-    final top = game.size.y * 0.15;
-    final bottom = game.roadTop - 60;
-    final y = top + game.random.nextDouble() * (bottom - top);
+    final pressure = game.altitudePressure;
+    final rooftop = game.random.nextDouble() < GameConfig.rooftopFoodChance;
+    final double y;
+    if (rooftop) {
+      // Just above the far lane — dive for it, but stay above car roofs.
+      y = game.roadTop - 28 - game.random.nextDouble() * 18;
+    } else {
+      // Band sinks with pressure so food stays in the flyable corridor.
+      final skyTop = game.size.y * 0.12;
+      final bandTop = lerpDouble(skyTop, game.roadTop - 140, pressure * 0.75)!;
+      final bandBottom =
+          lerpDouble(game.roadTop - 90, game.roadTop - 40, pressure)!;
+      final lo = min(bandTop, bandBottom);
+      final hi = max(bandTop, bandBottom);
+      y = lo + game.random.nextDouble() * max(8.0, hi - lo);
+    }
     final food = FoodPickup(type: type, position: Vector2(game.size.x + 30, y));
     game.world.add(food);
     return food;

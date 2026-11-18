@@ -23,8 +23,8 @@
       "to": 100,
       "interval": 2.4,
       "groundSpeed": [
-        0,
-        45
+        70.0,
+        110.0
       ],
       "cars": {
         "sportsCar": 3,
@@ -32,8 +32,7 @@
         "washed": 1
       },
       "lanes": [
-        0,
-        1
+        0
       ]
     }
   ],
@@ -41,7 +40,7 @@
     {
       "at": 3,
       "car": "mayorLimo",
-      "lane": 2,
+      "lane": 1,
       "groundSpeed": 20
     }
   ],

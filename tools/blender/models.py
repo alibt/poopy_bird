@@ -62,6 +62,20 @@ def _taillight(name: str, loc: tuple[float, float, float]):
 # ─── cars ────────────────────────────────────────────────────────────────────
 
 
+def _arch(
+    x0: float, x1: float, bottom: float = 0.05, top: float = 0.48
+) -> list[tuple[float, float]]:
+    """Wheel-arch notch along the bottom edge (x0 rear → x1 front)."""
+    mid = (x0 + x1) * 0.5
+    return [
+        (x0, bottom),
+        (x0 + (mid - x0) * 0.35, top),
+        (mid, top),
+        (x1 - (x1 - mid) * 0.35, top),
+        (x1, bottom),
+    ]
+
+
 def _sedan_profile(length: float = 2.6, roof: float = 1.15) -> list[tuple[float, float]]:
     """Clockwise XZ silhouette of a cartoon sedan (nose at +X)."""
     L = length * 0.5
@@ -76,7 +90,8 @@ def _sedan_profile(length: float = 2.6, roof: float = 1.15) -> list[tuple[float,
         (-L * 0.85, 0.62),         # trunk
         (-L * 1.0, 0.4),           # rear bumper top
         (-L * 0.98, 0.18),         # rear bumper bottom
-        (-L * 0.55, 0.18),         # bottom
+        *_arch(-L * 0.55, -L * 0.18),  # rear wheel
+        *_arch(L * 0.15, L * 0.52),    # front wheel
         (L * 0.55, 0.18),
     ]
 
@@ -87,6 +102,8 @@ def _sports_profile(length: float = 2.7) -> list[tuple[float, float]]:
         (L * 1.0, 0.15), (L * 1.05, 0.32), (L * 0.7, 0.42),
         (L * 0.15, 0.48), (-L * 0.05, 0.78), (-L * 0.45, 0.78),
         (-L * 0.7, 0.5), (-L * 1.0, 0.38), (-L * 0.98, 0.15),
+        *_arch(-L * 0.55, -L * 0.2, bottom=0.05, top=0.42),
+        *_arch(L * 0.12, L * 0.5, bottom=0.05, top=0.42),
         (L * 0.5, 0.15),
     ]
 
@@ -96,6 +113,9 @@ def _bus_profile(length: float = 3.4) -> list[tuple[float, float]]:
     return [
         (L * 0.95, 0.2), (L * 1.0, 0.55), (L * 0.9, 1.55),
         (-L * 0.9, 1.55), (-L * 1.0, 0.55), (-L * 0.95, 0.2),
+        *_arch(-L * 0.55, -L * 0.15, bottom=0.08, top=0.5),
+        *_arch(-0.2, 0.25, bottom=0.08, top=0.5),
+        *_arch(L * 0.2, L * 0.55, bottom=0.08, top=0.5),
         (L * 0.5, 0.2),
     ]
 
@@ -106,6 +126,10 @@ def _limo_profile(length: float = 4.0) -> list[tuple[float, float]]:
         (L * 0.98, 0.18), (L * 1.02, 0.38), (L * 0.8, 0.55),
         (L * 0.55, 0.62), (L * 0.35, 1.05), (-L * 0.55, 1.05),
         (-L * 0.75, 0.62), (-L * 0.98, 0.4), (-L * 0.96, 0.18),
+        *_arch(-L * 0.55, -L * 0.25),
+        *_arch(-0.45, -0.05),
+        *_arch(0.2, 0.55),
+        *_arch(L * 0.2, L * 0.52),
         (L * 0.5, 0.18),
     ]
 
@@ -139,7 +163,10 @@ def build_car(
             (L * 0.98, 0.18), (L * 1.02, 0.38), (L * 0.75, 0.55),
             (L * 0.2, 0.62), (L * 0.05, 0.85), (-L * 0.15, 0.7),
             (-L * 0.5, 0.58), (-L * 0.95, 0.55), (-L * 1.0, 0.35),
-            (-L * 0.98, 0.18), (L * 0.5, 0.18),
+            (-L * 0.98, 0.18),
+            *_arch(-L * 0.55, -L * 0.18),
+            *_arch(L * 0.15, L * 0.52),
+            (L * 0.5, 0.18),
         ]
         length = 2.6
     else:
@@ -284,9 +311,12 @@ def build_car(
             xs = (-length * 0.38, -0.25, 0.4, length * 0.35)
         elif kind == "bus":
             xs = (-length * 0.35, 0.0, length * 0.32)
+        # Wheels sit inside the arched body silhouette.
         for x in xs:
-            for y in (-0.5, 0.5):
-                parts.extend(_wheel(f"{kind}_w_{x:.2f}", (x, y, 0.24), 0.24))
+            for y in (-0.52, 0.52):
+                parts.extend(
+                    _wheel(f"{kind}_w_{x:.2f}_{y:.1f}", (x, y, 0.24), 0.24)
+                )
 
     return join_objects(parts, f"car_{kind}")
 
@@ -753,112 +783,210 @@ def build_tire(*, with_outline: bool = True) -> bpy.types.Object:
 
 
 def build_skyline_tile(*, seed: int, near: bool, length: float = 12.0):
+    """Apartment row sitting on a continuous sidewalk plinth (z=0)."""
     rng = random.Random(seed)
     if near:
-        body_c = (0.32, 0.42, 0.55, 1.0)
-        accent_c = (0.28, 0.36, 0.48, 1.0)
-        shop_c = (0.45, 0.35, 0.28, 1.0)
-        win_c = (1.0, 0.92, 0.55, 1.0)
-        win_off = (0.35, 0.42, 0.55, 1.0)
-        h_range = (1.5, 3.4)
+        body_c = (0.38, 0.46, 0.58, 1.0)
+        accent_c = (0.30, 0.38, 0.50, 1.0)
+        shop_c = (0.55, 0.38, 0.28, 1.0)
+        win_c = (1.0, 0.93, 0.62, 1.0)
+        win_off = (0.28, 0.34, 0.45, 1.0)
+        h_range = (1.8, 3.6)
+        depth = 1.05
     else:
-        body_c = (0.55, 0.66, 0.8, 1.0)
-        accent_c = (0.48, 0.58, 0.72, 1.0)
-        shop_c = (0.5, 0.55, 0.62, 1.0)
-        win_c = (0.82, 0.9, 0.98, 1.0)
-        win_off = (0.5, 0.58, 0.68, 1.0)
-        h_range = (2.2, 4.8)
+        body_c = (0.58, 0.68, 0.80, 1.0)
+        accent_c = (0.48, 0.58, 0.70, 1.0)
+        shop_c = (0.52, 0.56, 0.62, 1.0)
+        win_c = (0.86, 0.92, 0.98, 1.0)
+        win_off = (0.46, 0.54, 0.64, 1.0)
+        h_range = (2.4, 5.0)
+        depth = 0.78
 
     body_mat = toon_material(f"sky_{seed}_body", body_c, steps=3)
     accent_mat = toon_material(f"sky_{seed}_acc", accent_c, steps=2)
     shop_mat = toon_material(f"sky_{seed}_shop", shop_c, steps=2)
     win_mat = toon_material(f"sky_{seed}_win", win_c, steps=2)
     win_off_mat = toon_material(f"sky_{seed}_wo", win_off, steps=2)
-    objs = []
+    curb_mat = toon_material(
+        f"sky_{seed}_curb", (0.72, 0.74, 0.76, 1.0), steps=2
+    )
+    walk_mat = toon_material(
+        f"sky_{seed}_walk", (0.62, 0.64, 0.66, 1.0), steps=2
+    )
+
+    # Continuous sidewalk that pins the strip to the street line.
+    objs = [
+        mesh_cube(
+            f"walk_{seed}", (length + 0.4, depth + 0.35, 0.18),
+            (0, 0.05, 0.09), walk_mat,
+        ),
+        mesh_cube(
+            f"curb_{seed}", (length + 0.4, 0.22, 0.28),
+            (0, depth * 0.55, 0.14), curb_mat,
+        ),
+    ]
+
     x = -length * 0.5
     while x < length * 0.5:
-        w = 0.7 + rng.random() * 1.35
+        w = 0.85 + rng.random() * 1.15
         h = h_range[0] + rng.random() * (h_range[1] - h_range[0])
-        style = rng.choice(["block", "setback", "tower", "pitched"])
+        style = rng.choice(["block", "setback", "tower", "ledge"])
         cx = x + w * 0.5
+        # Buildings sit ON the sidewalk (base at z≈0.18).
+        base_z = 0.18
 
         b = mesh_cube(
-            f"b_{seed}_{len(objs)}", (w, 0.85 if near else 0.65, h),
-            (cx, 0, h * 0.5), body_mat,
+            f"b_{seed}_{len(objs)}", (w, depth, h),
+            (cx, 0, base_z + h * 0.5), body_mat,
         )
-        bevel(b, width=0.05, segments=2)
+        # Tiny bevel only — sharp apartments, not melted clay.
+        bevel(b, width=0.02, segments=1)
         objs.append(b)
 
-        # Ground-floor shop strip.
-        if near and h > 1.8:
+        if near:
             objs.append(
                 mesh_cube(
-                    f"shop_{len(objs)}", (w * 0.96, 0.88, 0.45),
-                    (cx, 0.02, 0.28), shop_mat,
+                    f"shop_{len(objs)}", (w * 0.92, depth + 0.04, 0.55),
+                    (cx, 0.02, base_z + 0.35), shop_mat,
+                )
+            )
+            # Door
+            objs.append(
+                mesh_cube(
+                    f"door_{len(objs)}", (0.22, 0.06, 0.42),
+                    (cx - w * 0.15, depth * 0.52, base_z + 0.28),
+                    toon_material(f"door_{len(objs)}", (0.2, 0.16, 0.14, 1.0), steps=2),
                 )
             )
 
-        # Roof variety.
-        if style == "setback" and h > 2.2:
+        if style == "setback" and h > 2.4:
             objs.append(
                 mesh_cube(
-                    f"set_{len(objs)}", (w * 0.65, 0.7, 0.55),
-                    (cx, 0, h + 0.2), accent_mat,
+                    f"set_{len(objs)}", (w * 0.7, depth * 0.85, 0.7),
+                    (cx, 0, base_z + h + 0.25), accent_mat,
                 )
             )
         elif style == "tower":
             objs.append(
                 mesh_cube(
-                    f"tow_{len(objs)}", (w * 0.35, 0.55, 0.9),
-                    (cx + w * 0.15, 0, h + 0.35), accent_mat,
+                    f"tow_{len(objs)}", (w * 0.32, depth * 0.7, 1.1),
+                    (cx + w * 0.18, 0, base_z + h + 0.4), accent_mat,
                 )
             )
             objs.append(
                 mesh_cylinder(
-                    f"ant_{len(objs)}", 0.035, 0.55,
-                    (cx + w * 0.15, 0, h + 0.95), accent_mat, vertices=6,
+                    f"ant_{len(objs)}", 0.03, 0.65,
+                    (cx + w * 0.18, 0, base_z + h + 1.15), accent_mat, vertices=6,
                 )
             )
-        elif style == "pitched":
+        elif style == "ledge":
             objs.append(
-                mesh_cone(
-                    f"pit_{len(objs)}", w * 0.55, 0.45, (cx, 0, h + 0.15),
-                    accent_mat, vertices=4, rotation=(0, 0, math.radians(45)),
+                mesh_cube(
+                    f"led_{len(objs)}", (w * 1.05, depth * 1.08, 0.12),
+                    (cx, 0, base_z + h * 0.55), accent_mat,
                 )
             )
-        elif rng.random() > 0.55:
             objs.append(
-                mesh_cylinder(
-                    f"ant_{len(objs)}", 0.04, 0.5,
-                    (cx, 0, h + 0.22), body_mat, vertices=6,
+                mesh_cube(
+                    f"corn_{len(objs)}", (w * 1.02, depth * 1.05, 0.14),
+                    (cx, 0, base_z + h + 0.05), accent_mat,
                 )
             )
-            if rng.random() > 0.6:
+        else:
+            objs.append(
+                mesh_cube(
+                    f"roof_{len(objs)}", (w * 1.02, depth * 1.05, 0.12),
+                    (cx, 0, base_z + h + 0.04), accent_mat,
+                )
+            )
+            if rng.random() > 0.45:
                 objs.append(
                     mesh_cylinder(
-                        f"tank_{len(objs)}", 0.14, 0.22,
-                        (cx - w * 0.2, 0, h + 0.12), accent_mat,
+                        f"tank_{len(objs)}", 0.16, 0.28,
+                        (cx - w * 0.22, 0, base_z + h + 0.22), accent_mat,
                         vertices=10, rotation=(0, math.radians(90), 0),
                     )
                 )
 
-        # Window grid with lit / dark mix.
-        wy = 0.7 if near else 0.55
-        while wy < h - 0.3:
-            wx = x + 0.16
-            while wx < x + w - 0.22:
-                lit = rng.random() > (0.22 if near else 0.35)
+        # Ordered window grid.
+        wy = base_z + (0.95 if near else 0.7)
+        while wy < base_z + h - 0.25:
+            wx = x + 0.18
+            while wx < x + w - 0.18:
+                lit = rng.random() > (0.25 if near else 0.4)
                 objs.append(
                     mesh_cube(
                         f"w_{seed}_{len(objs)}",
-                        (0.14, 0.07, 0.18),
-                        (wx, 0.4, wy),
+                        (0.16, 0.06, 0.22),
+                        (wx, depth * 0.52, wy),
                         win_mat if lit else win_off_mat,
                     )
                 )
-                wx += 0.28 + rng.random() * 0.06
-            wy += 0.38 + rng.random() * 0.08
-        x += w + 0.1 + rng.random() * 0.35
+                wx += 0.32
+            wy += 0.42
+        x += w + 0.08 + rng.random() * 0.22
+    return objs
+
+
+def build_tree(*, seed: int = 0) -> list[bpy.types.Object]:
+    """Cartoon roadside tree — trunk + layered canopy."""
+    rng = random.Random(seed)
+    bark = toon_material("tree_bark", (0.45, 0.28, 0.14, 1.0), steps=3)
+    leaf_a = toon_material("tree_leaf_a", (0.18, 0.58, 0.22, 1.0), steps=3)
+    leaf_b = toon_material("tree_leaf_b", (0.12, 0.42, 0.16, 1.0), steps=2)
+    leaf_c = toon_material("tree_leaf_c", (0.28, 0.70, 0.26, 1.0), steps=2)
+    trunk = mesh_cylinder("trunk", 0.16, 1.5, (0, 0, 0.75), bark, vertices=12)
+    canopy = [
+        mesh_uv_sphere(
+            "canopy_main", 0.85, (0, 0, 2.05), leaf_a,
+            segments=20, ring_count=14, scale=(1.25, 1.05, 1.0),
+        ),
+        mesh_uv_sphere(
+            "canopy_l", 0.55, (-0.55, 0.12, 1.85), leaf_b,
+            segments=16, ring_count=12, scale=(1.15, 1.0, 0.95),
+        ),
+        mesh_uv_sphere(
+            "canopy_r", 0.5, (0.58, -0.08, 1.9), leaf_c,
+            segments=16, ring_count=12, scale=(1.1, 0.95, 0.9),
+        ),
+        mesh_uv_sphere(
+            "canopy_top", 0.45, (0.05, 0.08, 2.6), leaf_c,
+            segments=14, ring_count=12, scale=(1.05, 0.95, 0.85),
+        ),
+        mesh_uv_sphere(
+            "canopy_back", 0.4, (-0.1, -0.25, 2.15), leaf_b,
+            segments=12, ring_count=10, scale=(1.0, 0.85, 0.9),
+        ),
+    ]
+    lean = (rng.random() - 0.5) * 0.1
+    for obj in [trunk, *canopy]:
+        obj.rotation_euler = Euler((0, lean, 0))
+        apply_loc_rot_scale(obj)
+    return [trunk, *canopy]
+
+
+def build_street_tile(*, length: float = 10.0) -> list[bpy.types.Object]:
+    """Asphalt strip with curb + dashed lane paint (top-down sprite)."""
+    asphalt = toon_material("street_asphalt", (0.22, 0.24, 0.26, 1.0), steps=2)
+    curb = toon_material("street_curb", (0.78, 0.80, 0.82, 1.0), steps=2)
+    paint = toon_material("street_paint", (0.98, 0.88, 0.12, 1.0), steps=2)
+    shoulder = toon_material("street_shoulder", (0.32, 0.34, 0.36, 1.0), steps=2)
+    # Lay out in XY so a Z-down camera sees the road surface.
+    objs = [
+        mesh_cube("asphalt", (length, 3.2, 0.08), (0, 0, 0), asphalt),
+        mesh_cube("shoulder_n", (length, 0.4, 0.09), (0, 1.4, 0.02), shoulder),
+        mesh_cube("shoulder_f", (length, 0.4, 0.09), (0, -1.4, 0.02), shoulder),
+        mesh_cube("curb_n", (length, 0.22, 0.18), (0, 1.7, 0.06), curb),
+        mesh_cube("curb_f", (length, 0.22, 0.18), (0, -1.7, 0.06), curb),
+    ]
+    x = -length * 0.45
+    i = 0
+    while x < length * 0.45:
+        objs.append(
+            mesh_cube(f"dash_{i}", (0.7, 0.14, 0.05), (x, 0, 0.05), paint)
+        )
+        x += 1.15
+        i += 1
     return objs
 
 

@@ -1,7 +1,7 @@
 /// Tunable gameplay constants. Keep magic numbers here, not in components.
 abstract final class GameConfig {
   // Bird
-  static const double birdSize = 60;
+  static const double birdSize = 72;
   static const double gravity = 400;
   static const double flapVelocity = -300;
   static const double flapCooldown = 0.15;
@@ -21,7 +21,7 @@ abstract final class GameConfig {
 
   /// A big poop also splats cars whose centre is within this horizontal
   /// distance of the impact, in any lane.
-  static const double bigSplatReach = 70;
+  static const double bigSplatReach = 90;
 
   // Belly (ammo)
   static const int bellyCapacity = 6;
@@ -36,30 +36,45 @@ abstract final class GameConfig {
   static const double chiliDuration = 5;
   static const int burritoBigPoops = 3;
 
+  /// Chance a food spawn is a low rooftop snack (risky dive).
+  static const double rooftopFoodChance = 0.35;
+
   // World
   /// Fraction of the screen height taken by the road, measured from the bottom.
-  static const double roadHeightFraction = 0.4;
+  /// Higher = closer framing so cars read larger.
+  static const double roadHeightFraction = 0.48;
 
   /// Where each lane's cars stand, as a fraction of road height from the road
-  /// top. Lane 0 is the far lane, the last lane is nearest the viewer.
-  /// Worlds 1–2 use lanes 0–1; Highway (world 3+) can also use lane 2.
-  static const List<double> laneBaselines = [0.28, 0.58, 0.9];
+  /// top. Lane 0 is the far lane, lane 1 is nearest the viewer.
+  static const List<double> laneBaselines = [0.40, 0.86];
 
   // Cars
   /// Minimum empty space between two cars in the same lane at spawn time.
-  static const double minCarGap = 170;
+  static const double minCarGap = 200;
 
   // Difficulty ramp: values move from start to end over [rampDuration].
   static const double rampDuration = 180;
-  static const double scrollSpeedStart = 120;
-  static const double scrollSpeedEnd = 190;
+  static const double scrollSpeedStart = 130;
+  static const double scrollSpeedEnd = 210;
   static const double carSpawnIntervalStart = 2;
   static const double carSpawnIntervalEnd = 0.9;
 
   /// Cars drive toward the bird; their screen speed is the scroll speed plus
-  /// a random ground speed up to this value.
-  static const double carGroundSpeedStart = 100;
-  static const double carGroundSpeedEnd = 160;
+  /// a random ground speed up to this value. Keep mins high so traffic never
+  /// looks parked relative to the road.
+  static const double carGroundSpeedStart = 90;
+  static const double carGroundSpeedEnd = 170;
+
+  /// Within a timed level, scroll speed grows by this fraction by the end.
+  static const double levelScrollSpeedRamp = 0.35;
+
+  // Altitude pressure — missed cars push the bird's soft ceiling down.
+  static const double altitudePressurePerEscape = 0.14;
+  static const double altitudePressureRecoverPerSecond = 0.035;
+  static const double altitudePressurePull = 90;
+
+  /// Bird below this fraction of the sky (from top) can be shot by attackers.
+  static const double attackerDangerFraction = 0.55;
 
   // Scoring
   /// Bonus for defeating a boss.

@@ -7,7 +7,9 @@
   "scrollSpeed": 100,
   "rageFillPerEscape": 0.2,
   "food": {
-    "types": ["berries"],
+    "types": [
+      "berries"
+    ],
     "minInterval": 10,
     "maxInterval": 14
   },
@@ -16,13 +18,23 @@
       "from": 2,
       "to": 45,
       "interval": 3.2,
-      "groundSpeed": [0, 25],
-      "cars": { "sedan": 1 },
-      "lanes": [1]
+      "groundSpeed": [
+        70.0,
+        110.0
+      ],
+      "cars": {
+        "sedan": 1
+      },
+      "lanes": [
+        1
+      ]
     }
   ],
   "objectives": [
-    { "type": "splatCars", "count": 3 }
+    {
+      "type": "splatCars",
+      "count": 3
+    }
   ],
   "stars": {
     "two": 400,

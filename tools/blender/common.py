@@ -430,6 +430,48 @@ def setup_ortho_camera(
     return cam
 
 
+def setup_grounded_strip_camera(
+    objects: list[bpy.types.Object],
+    *,
+    resolution: tuple[int, int],
+    pad_x: float = 1.0,
+    pad_top: float = 1.06,
+    ground_z: float | None = None,
+) -> bpy.types.Object:
+    """Ortho side camera pinned so the strip sits on the bottom of the frame.
+
+    Avoids the floating gap caused by uniform padding under building bases.
+    """
+    scene = bpy.context.scene
+    scene.render.resolution_x = resolution[0]
+    scene.render.resolution_y = resolution[1]
+
+    mn, mx = framing_bounds(objects)
+    ground = mn.z if ground_z is None else ground_z
+    width = max(mx.x - mn.x, 0.001) * pad_x
+    height = max(mx.z - ground, 0.001) * pad_top
+    # Ortho scale is the larger visible axis; match aspect to the strip.
+    aspect = resolution[0] / resolution[1]
+    needed_w = height * aspect
+    if width < needed_w:
+        width = needed_w
+    else:
+        height = width / aspect
+
+    center_x = (mn.x + mx.x) * 0.5
+    center_z = ground + height * 0.5
+
+    cam_data = bpy.data.cameras.new("GroundedCam")
+    cam_data.type = "ORTHO"
+    cam_data.ortho_scale = width
+    cam = bpy.data.objects.new("GroundedCam", cam_data)
+    scene.collection.objects.link(cam)
+    scene.camera = cam
+    cam.location = (center_x, (mn.y + mx.y) * 0.5 + max(width, height) * 3, center_z)
+    cam.rotation_euler = Euler((math.radians(90), 0, math.radians(180)))
+    return cam
+
+
 def render_png(path: Path) -> Path:
     ensure_images_dir()
     path = Path(path)

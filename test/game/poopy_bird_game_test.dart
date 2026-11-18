@@ -119,7 +119,7 @@ void main() {
       _createGame,
       (game) async {
         for (var i = 0; i < 5; i++) {
-          final car = await _parkCar(game, x: -81);
+          final car = await _parkCar(game, x: -CarType.sedan.width - 1);
           game.update(_frame);
           expect(car.isRemoving || car.isRemoved, isTrue);
         }
@@ -132,7 +132,7 @@ void main() {
       'splatted cars that escape do not raise rage',
       _createGame,
       (game) async {
-        final car = await _parkCar(game, x: -81);
+        final car = await _parkCar(game, x: -CarType.sedan.width - 1);
         car.splat();
         game.update(_frame);
         expect(game.rage.value, 0);

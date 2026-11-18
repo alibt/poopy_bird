@@ -143,7 +143,7 @@ void main() {
       ),
       (game) async {
         game.startRun();
-        await _parkCar(game, x: -81);
+        await _parkCar(game, x: -CarType.sedan.width - 1);
         game.update(_frame);
         game.update(_frame);
         expect(game.outcome, RunOutcome.objectiveFailed);

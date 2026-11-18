@@ -76,9 +76,10 @@ class SkylineLayer extends ParallaxStrip {
     if (sprite == null) return;
     final ground = game.roadTop;
     final height = ground * heightFraction;
+    // Overlap the curb slightly so apartments don't float above the street.
     sprite.render(
       canvas,
-      position: Vector2(0, ground - height),
+      position: Vector2(0, ground - height + 8),
       size: Vector2(loopWidth, height),
     );
   }

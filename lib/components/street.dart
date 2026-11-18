@@ -5,32 +5,50 @@ import 'package:flame/components.dart';
 import '../game/config.dart';
 import '../game/poopy_bird_game.dart';
 
-/// The road, drawn from the road top to the bottom of the screen, with
-/// dashed lane dividers that scroll by [scrollOffset].
+/// The road: Blender asphalt strip plus dashed lane divider overlays.
 class Street extends Component with HasGameReference<PoopyBirdGame> {
   Street() : super(priority: 0);
 
-  static const double _dashLength = 20;
-  static const double _dashGap = 15;
-  static const double _curbHeight = 8;
+  static const double _dashLength = 28;
+  static const double _dashGap = 18;
+  static const double _loopWidth = 1200;
 
-  static final Paint _road = Paint()..color = const Color(0xFF2F4F4F);
+  static final Paint _fallback = Paint()..color = const Color(0xFF2A3034);
   static final Paint _curb = Paint()..color = const Color(0xFFB0B0B0);
   static final Paint _dash = Paint()
     ..color = const Color(0xFFFFD600)
-    ..strokeWidth = 4;
+    ..strokeWidth = 5;
 
   double scrollOffset = 0;
+  Sprite? _strip;
+
+  @override
+  Future<void> onLoad() async {
+    _strip = await game.loadSprite('bg_street.png');
+  }
 
   @override
   void render(Canvas canvas) {
     final top = game.roadTop;
     final width = game.size.x;
-    canvas.drawRect(Rect.fromLTRB(0, top, width, game.size.y), _road);
-    canvas.drawRect(Rect.fromLTWH(0, top, width, _curbHeight), _curb);
+    final height = game.size.y - top;
+    final strip = _strip;
+    if (strip != null) {
+      final offset = scrollOffset % _loopWidth;
+      for (var x = -offset; x < width; x += _loopWidth) {
+        strip.render(
+          canvas,
+          position: Vector2(x, top),
+          size: Vector2(_loopWidth, height),
+        );
+      }
+    } else {
+      canvas.drawRect(Rect.fromLTWH(0, top, width, height), _fallback);
+    }
+    // Far curb under the apartments — keeps skyline visually planted.
+    canvas.drawRect(Rect.fromLTWH(0, top - 4, width, 10), _curb);
 
     final baselines = GameConfig.laneBaselines;
-    // Divider between each consecutive pair of lanes.
     for (var i = 0; i < baselines.length - 1; i++) {
       final y = top + game.roadHeight * ((baselines[i] + baselines[i + 1]) / 2);
       const period = _dashLength + _dashGap;

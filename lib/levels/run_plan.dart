@@ -35,7 +35,12 @@ class LevelPlan implements RunPlan {
   LevelDefinition get level => definition;
 
   @override
-  double scrollSpeedAt(double t) => definition.scrollSpeed;
+  double scrollSpeedAt(double t) {
+    // Levels speed up as they proceed so late windows feel harder.
+    final progress = (t / definition.timeLimit).clamp(0.0, 1.0);
+    return definition.scrollSpeed *
+        (1 + GameConfig.levelScrollSpeedRamp * progress);
+  }
 
   @override
   TrafficSegment? trafficAt(double t) {
@@ -91,7 +96,7 @@ class EndlessPlan implements RunPlan {
       from: t,
       to: double.infinity,
       interval: _difficulty.carSpawnInterval,
-      groundSpeedMin: 0,
+      groundSpeedMin: GameConfig.carGroundSpeedStart * 0.75,
       groundSpeedMax: _difficulty.carGroundSpeedMax,
       cars: {
         CarType.sedan: 6,

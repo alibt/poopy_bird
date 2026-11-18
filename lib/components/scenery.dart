@@ -16,19 +16,21 @@ class Scenery extends Component with HasGameReference<PoopyBirdGame> {
   static const double _loopLength = _treeCount * _treeSpacing;
 
   final Street _street = Street();
-  final List<Tree> _trees = [for (var i = 0; i < _treeCount; i++) Tree()];
+  final List<Tree> _trees = [
+    for (var i = 0; i < _treeCount; i++) Tree(variant: (i % 3) + 1),
+  ];
   late final List<ParallaxStrip> _layers = [
     CloudLayer(),
     SkylineLayer(
       factor: 0.2,
       asset: 'bg_skyline_far.png',
-      heightFraction: 0.7,
+      heightFraction: 0.72,
       priority: -20,
     ),
     SkylineLayer(
       factor: 0.5,
       asset: 'bg_skyline_near.png',
-      heightFraction: 0.45,
+      heightFraction: 0.48,
       priority: -10,
     ),
   ];
@@ -56,10 +58,10 @@ class Scenery extends Component with HasGameReference<PoopyBirdGame> {
 
   void _layout() {
     for (var i = 0; i < _trees.length; i++) {
-      // Alternate offsets so the row doesn't look perfectly regular.
       final base = i * _treeSpacing + (i.isOdd ? 60 : 0);
       final x = (base - _scroll) % _loopLength - _treeSpacing;
-      _trees[i].position.setValues(x, game.roadTop);
+      // Plant trees on the far curb (slightly into the road top).
+      _trees[i].position.setValues(x, game.roadTop + 6);
     }
   }
 }

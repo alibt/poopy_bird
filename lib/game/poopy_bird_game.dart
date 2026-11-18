@@ -6,6 +6,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState, KeyEventResult;
 
+import '../components/attacker_spawner.dart';
 import '../components/bird.dart';
 import '../components/car.dart';
 import '../components/car_spawner.dart';
@@ -91,6 +92,9 @@ class PoopyBirdGame extends FlameGame
   /// Seconds of play this run.
   double elapsed = 0;
 
+  /// 0–1 soft ceiling push from missed cars. Food follows this band.
+  double altitudePressure = 0;
+
   /// Levels wait on their intro screen until [startRun]; Endless starts
   /// straight away.
   late bool started = plan.level == null;
@@ -99,6 +103,17 @@ class PoopyBirdGame extends FlameGame
 
   RunOutcome? outcome;
   LevelResult? lastResult;
+
+  /// World index 1–5 from level id (`w3_l1` → 3), or 0 for Endless.
+  int get worldNumber {
+    final id = plan.level?.id;
+    if (id == null || id.length < 2 || id[0] != 'w') return 0;
+    return int.tryParse(id[1]) ?? 0;
+  }
+
+  /// High worlds (and late Endless) spawn roadside shooters.
+  bool get attackersEnabled =>
+      worldNumber >= 3 || (worldNumber == 0 && elapsed > 45);
 
   bool get isFinished => outcome != null;
   bool get isRunning => started && !isFinished && !isPausedByPlayer;
@@ -140,6 +155,16 @@ class PoopyBirdGame extends FlameGame
 
   double get aimGroundY => laneBaseline(aimLane);
 
+  /// Soft ceiling Y the bird is pushed below when altitude pressure rises.
+  double get pressureCeiling {
+    final top = GameConfig.birdSize / 2;
+    final floor = roadTop - GameConfig.birdSize;
+    return top + (floor - top) * altitudePressure * 0.7;
+  }
+
+  /// Bird below this Y is in the attacker danger band.
+  double get attackerDangerY => size.y * GameConfig.attackerDangerFraction;
+
   @override
   Color backgroundColor() => const Color(0xFF87CEEB);
 
@@ -158,7 +183,14 @@ class PoopyBirdGame extends FlameGame
     foodSpawner = FoodSpawner();
     hud = Hud();
 
-    world.addAll([Scenery(), LandingMarker(), bird, carSpawner, foodSpawner]);
+    world.addAll([
+      Scenery(),
+      LandingMarker(),
+      bird,
+      carSpawner,
+      foodSpawner,
+      AttackerSpawner(),
+    ]);
     camera.viewport.add(hud);
 
     if (started) {
@@ -182,6 +214,11 @@ class PoopyBirdGame extends FlameGame
     combo.update(dt);
     belly.update(dt);
     objectives.onScore(score.score);
+    altitudePressure = max(
+      0,
+      altitudePressure -
+          GameConfig.altitudePressureRecoverPerSecond * dt,
+    );
     _checkEnd();
   }
 
@@ -276,6 +313,7 @@ class PoopyBirdGame extends FlameGame
     stats.reset();
     objectives = ObjectiveTracker(plan.objectives);
     elapsed = 0;
+    altitudePressure = 0;
     outcome = null;
     lastResult = null;
     started = true;
@@ -398,6 +436,10 @@ class PoopyBirdGame extends FlameGame
     objectives.onEscape();
     rage.onCarEscaped();
     stats.onRage(rage.value);
+    altitudePressure = min(
+      1,
+      altitudePressure + GameConfig.altitudePressurePerEscape,
+    );
     if (rage.isFull) finish(RunOutcome.rageOut);
   }
 

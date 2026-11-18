@@ -33,7 +33,9 @@ transparent sprites into `assets/images/`.
 | `coin_01.png` … `coin_06.png` | Coin flip frames (+ still `coin.png`) |
 | `trophy_*.png`, `medal.png` | UI |
 | `bg_clouds.png`, `bg_skyline_*.png` | Parallax strips |
-| `tire.png`, `car-body.png` | Wheels + sedan alias |
+| `bg_street.png` | Top-down asphalt strip |
+| `tree.png`, `tree_01..03.png` | Roadside trees |
+| `tire.png`, `car-body.png` | Standalone tire + sedan alias |
 
 ## Modules
 

@@ -109,10 +109,13 @@ class Bird extends PositionComponent
     _sincePoop += dt;
 
     velocityY += GameConfig.gravity * dt;
+    // Missed cars pile on altitude pressure — a gentle downward pull.
+    velocityY +=
+        GameConfig.altitudePressurePull * game.altitudePressure * dt;
     position.y += velocityY * dt;
 
-    // Stop at the screen edges instead of building up speed against them.
-    final top = size.y / 2;
+    // Soft ceiling drops as pressure rises; hard edges still clamp.
+    final top = max(size.y / 2, game.pressureCeiling);
     final bottom = game.size.y - size.y / 2;
     if (position.y < top) {
       position.y = top;

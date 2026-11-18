@@ -4,7 +4,7 @@ Usage:
   /opt/homebrew/bin/blender -b -P tools/blender/export_all.py
 
 Optional argv after ``--``:
-  --only bird,cars,food,ui,bg
+  --only bird,cars,food,ui,bg,trees,street
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ from common import (  # noqa: E402
     png_outline,
     render_png,
     reset_scene,
+    setup_grounded_strip_camera,
     setup_ortho_camera,
 )
 from models import (  # noqa: E402
@@ -39,7 +40,9 @@ from models import (  # noqa: E402
     build_medal,
     build_monster_truck,
     build_skyline_tile,
+    build_street_tile,
     build_tire,
+    build_tree,
     build_trophy,
     food_pose,
 )
@@ -109,7 +112,7 @@ def export_cars():
     for kind, color in CAR_COLORS.items():
         _render_subject(
             f"car_{kind}.png",
-            lambda k=kind, c=color: build_car(k, body_color=c),
+            lambda k=kind, c=color: build_car(k, body_color=c, with_wheels=True),
             axis="CAR",
             resolution=(896, 480),
             outline=6,
@@ -192,7 +195,7 @@ def export_backgrounds():
 
     reset_scene()
     far = build_skyline_tile(seed=1, near=False)
-    setup_ortho_camera(far, axis="Y", resolution=(1200, 520), padding=1.02)
+    setup_grounded_strip_camera(far, resolution=(1200, 560), pad_top=1.04)
     bpy.context.scene.world.node_tree.nodes["Background"].inputs[
         "Strength"
     ].default_value = 0.0
@@ -200,11 +203,35 @@ def export_backgrounds():
 
     reset_scene()
     near = build_skyline_tile(seed=2, near=True)
-    setup_ortho_camera(near, axis="Y", resolution=(1200, 440), padding=1.02)
+    setup_grounded_strip_camera(near, resolution=(1200, 480), pad_top=1.04)
     bpy.context.scene.world.node_tree.nodes["Background"].inputs[
         "Strength"
     ].default_value = 0.0
     render_png(IMAGES_DIR / "bg_skyline_near.png")
+
+
+def export_trees():
+    for i in range(1, 4):
+        reset_scene()
+        parts = build_tree(seed=i * 17)
+        setup_ortho_camera(parts, axis="Y", resolution=(420, 560), padding=1.12)
+        bpy.context.scene.world.node_tree.nodes["Background"].inputs[
+            "Strength"
+        ].default_value = 0.0
+        out = render_png(IMAGES_DIR / f"tree_{i:02d}.png")
+        png_outline(out, width=5)
+    shutil.copyfile(IMAGES_DIR / "tree_01.png", IMAGES_DIR / "tree.png")
+
+
+def export_street():
+    reset_scene()
+    parts = build_street_tile()
+    # Top-down so the asphalt surface fills the sprite (not a thin side edge).
+    setup_ortho_camera(parts, axis="Z", resolution=(1200, 360), padding=1.02)
+    bpy.context.scene.world.node_tree.nodes["Background"].inputs[
+        "Strength"
+    ].default_value = 0.0
+    render_png(IMAGES_DIR / "bg_street.png")
 
 
 def main():
@@ -218,6 +245,8 @@ def main():
         ("food", export_food),
         ("ui", export_ui),
         ("bg", export_backgrounds),
+        ("trees", export_trees),
+        ("street", export_street),
     ]
     for name, fn in jobs:
         if only is not None and name not in only:

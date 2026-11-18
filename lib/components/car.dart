@@ -29,8 +29,6 @@ class Car extends PositionComponent
           priority: 10 + lane,
         );
 
-  static const double _tireDiameter = 20;
-
   final CarType type;
   final int lane;
 
@@ -42,7 +40,6 @@ class Car extends PositionComponent
 
   bool get isSplatted => hitsTaken >= type.hitPoints;
 
-  final List<SpriteComponent> _tires = [];
   final List<SplatMark> _marks = [];
 
   /// Centre of the roof, where splats land.
@@ -59,34 +56,12 @@ class Car extends PositionComponent
     add(RectangleHitbox(collisionType: CollisionType.passive, isSolid: true));
   }
 
-  /// Adds the sprite-based body and wheels. Cars that draw themselves
-  /// override this.
+  /// Adds the sprite-based body. Cars that draw themselves override this.
   Future<void> buildVisuals() async {
     final bodySprite = await game.loadSprite(type.bodyAsset!);
-    // Blender toon assets already face left (travel direction). Do not mirror.
-    final visuals = PositionComponent(size: size);
-
-    if (type.wheelsInSprite) {
-      visuals.add(SpriteComponent(sprite: bodySprite, size: size.clone()));
-    } else {
-      final tireSprite = await game.loadSprite('tire.png');
-      final bodyHeight = size.y - _tireDiameter / 2;
-      visuals.add(SpriteComponent(
-        sprite: bodySprite,
-        size: Vector2(size.x, bodyHeight),
-      ));
-      for (final x in const [0.19, 0.775]) {
-        final tire = SpriteComponent(
-          sprite: tireSprite,
-          size: Vector2.all(_tireDiameter),
-          position: Vector2(size.x * x, bodyHeight),
-          anchor: Anchor.center,
-        );
-        _tires.add(tire);
-        visuals.add(tire);
-      }
-    }
-    add(visuals);
+    // Blender toon assets already face left and include wheels — do not
+    // mirror or bolt on tire.png (that caused a second pair of tires).
+    add(SpriteComponent(sprite: bodySprite, size: size.clone()));
   }
 
   /// Where the splat for the [hit]th hit goes, relative to the car.
@@ -130,14 +105,6 @@ class Car extends PositionComponent
     super.update(dt);
     if (isRemoving) return;
     position.x -= speed * dt;
-
-    // Moving left: bottom of the tire should roll left → clockwise on screen.
-    // Flame angles increase clockwise, so add positive roll.
-    final roll = speed * dt / (_tireDiameter / 2);
-    for (final tire in _tires) {
-      tire.angle -= roll;
-    }
-
     if (position.x + size.x < 0) onLeftScreen();
   }
 
