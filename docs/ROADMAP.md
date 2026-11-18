@@ -187,9 +187,9 @@ Check the licence of the current placeholder art before any release; it will all
 Remaining polish (not blocking M5): hazard sprites (power lines, crows, drones, sprinklers), coffee / golden-seed food, sunroof open/close timing, mayor limo weak spots, world-tinted parallax plates.
 
 ### M6 — Polish
-- [ ] Music and SFX
-- [ ] Juice: screen shake, haptics, transitions
-- [ ] Tutorial level; settings screen (saved through the same `KeyValueStore`)
+- [x] Music and SFX (`flame_audio` + procedural stubs in `assets/audio/`; swap for Kenney/CC0 anytime)
+- [x] Juice: screen shake, haptics, fade/slide transitions
+- [x] Tutorial level (`tutorial.json`); settings screen (music/SFX/haptics/left-handed, same `KeyValueStore`)
 
 ### M7 — Release
 - [ ] Real bundle id (replace `com.example.poopy_bird`), app icons, splash

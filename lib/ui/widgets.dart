@@ -186,6 +186,28 @@ class StarCount extends StatelessWidget {
 
 const Color coinGold = Color(0xFFFFB300);
 
+/// Soft fade+slide used for menu navigation (M6 transitions).
+Route<T> fadeSlideRoute<T>(Widget page) {
+  return PageRouteBuilder<T>(
+    pageBuilder: (_, __, ___) => page,
+    transitionsBuilder: (_, animation, __, child) {
+      final curved =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.04, 0),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 280),
+  );
+}
+
 /// "● 250" coin badge.
 class CoinCount extends StatelessWidget {
   const CoinCount({super.key, required this.coins, this.size = 20});

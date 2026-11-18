@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,12 +12,21 @@ import 'package:poopy_bird/game/poopy_bird_game.dart';
 import 'package:poopy_bird/progress/level_result.dart';
 import 'package:poopy_bird/progress/player_progress.dart';
 import 'package:poopy_bird/progress/progress_repository.dart';
+import 'package:poopy_bird/settings/game_settings.dart';
+import 'package:poopy_bird/settings/settings_store.dart';
+import 'package:poopy_bird/storage/key_value_store.dart';
 import 'package:poopy_bird/ui/widgets.dart';
 
-ProgressController _controller([PlayerProgress? progress]) =>
+ProgressController _controller({
+  PlayerProgress? progress,
+  GameSettings settings = const GameSettings(seenTutorial: true),
+}) =>
     ProgressController(
       levelRepository: AssetLevelRepository(),
       progressRepository: InMemoryProgressRepository(progress),
+      settingsStore: SettingsStore(MemoryKeyValueStore({
+        SettingsStore.key: jsonEncode(settings.toJson()),
+      })),
     );
 
 LevelResult _win(String id) => LevelResult(
@@ -142,7 +153,8 @@ void main() {
   testWidgets('the shop sells upgrades and cosmetics for coins',
       (tester) async {
     await _useLandscape(tester);
-    final controller = _controller(const PlayerProgress(coins: 400));
+    final controller =
+        _controller(progress: const PlayerProgress(coins: 400));
     await tester.pumpWidget(PoopyBirdApp(controller: controller));
     await _settle(tester);
     expect(find.text('400'), findsOneWidget);
@@ -194,6 +206,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Trophy Room'), findsOneWidget);
     expect(find.text('Cups'), findsOneWidget);
+  });
+
+  testWidgets('settings toggles persist through the settings store',
+      (tester) async {
+    await _useLandscape(tester);
+    final controller = _controller();
+    await tester.pumpWidget(PoopyBirdApp(controller: controller));
+    await _settle(tester);
+
+    await tester.tap(find.byKey(const ValueKey('settings')));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Music'), findsOneWidget);
+
+    await tester.tap(find.byType(Switch).at(0));
+    await _settle(tester);
+    expect(controller.settings.music, isFalse);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+    final reloaded = await controller.settingsStore.load();
+    expect(reloaded.music, isFalse);
+  });
+
+  testWidgets('new players see Tutorial before Campaign', (tester) async {
+    await _useLandscape(tester);
+    await tester.pumpWidget(PoopyBirdApp(
+      controller: _controller(settings: const GameSettings()),
+    ));
+    await _settle(tester);
+
+    expect(find.text('Tutorial'), findsOneWidget);
+    expect(find.text('Campaign'), findsOneWidget);
+    expect(find.text('Play'), findsNothing);
   });
 
   testWidgets('finishing a level shows the coins it earned', (tester) async {

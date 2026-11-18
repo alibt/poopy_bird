@@ -2,6 +2,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
+import '../../audio/game_audio.dart';
 import '../../economy/rewards.dart';
 import '../../game/poopy_bird_game.dart';
 import '../../levels/level_definition.dart';
@@ -47,21 +48,28 @@ class _GameScreenState extends State<GameScreen> {
     final id = widget.levelId;
     final LevelDefinition? level =
         id == null ? null : await controller.levelRepository.loadLevel(id);
+    controller.audio.playMusic(GameAudio.gameMusic);
     return PoopyBirdGame(
       plan: level == null ? EndlessPlan() : LevelPlan(level),
       bestScore: level == null
           ? controller.progress.endlessBest
           : controller.progress.recordFor(level.id).bestScore,
       loadout: controller.progress.loadout,
+      feedback: controller.feedback,
+      leftHanded: controller.settings.leftHanded,
       onRunFinished: _onRunFinished,
     );
   }
 
-  void _quit() => Navigator.of(context).pop();
+  void _quit() {
+    final controller = AppScope.read(context);
+    controller.audio.playMusic(GameAudio.menuMusic);
+    Navigator.of(context).pop();
+  }
 
   void _playNext(String levelId) {
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (_) => GameScreen(levelId: levelId),
+    Navigator.of(context).pushReplacement(fadeSlideRoute(
+      GameScreen(levelId: levelId),
     ));
   }
 

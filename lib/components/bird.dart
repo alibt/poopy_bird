@@ -77,6 +77,8 @@ class Bird extends SpriteAnimationComponent
       ),
     );
     game.world.add(poop);
+    game.feedback.audio.sfx('poop.wav', volume: 0.7);
+    game.feedback.hapticLight();
     return poop;
   }
 

@@ -7,6 +7,7 @@ import 'app/progress_controller.dart';
 import 'levels/level_repository.dart';
 import 'monetization/ads.dart';
 import 'progress/progress_repository.dart';
+import 'settings/settings_store.dart';
 import 'storage/shared_prefs_store.dart';
 
 Future<void> main() async {
@@ -17,12 +18,11 @@ Future<void> main() async {
   ]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-  // Swap these for backend-backed implementations later; the screens and
-  // the game only see the interfaces.
+  final store = SharedPrefsStore();
   final controller = ProgressController(
     levelRepository: AssetLevelRepository(),
-    progressRepository: LocalProgressRepository(SharedPrefsStore()),
-    // Real ads arrive with the SDK integration (docs/MONETIZATION.md).
+    progressRepository: LocalProgressRepository(store),
+    settingsStore: SettingsStore(store),
     ads: kDebugMode ? const DebugRewardedAds() : const NoAds(),
   );
   runApp(PoopyBirdApp(controller: controller));

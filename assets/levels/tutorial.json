@@ -1,0 +1,31 @@
+{
+  "id": "tutorial",
+  "version": 1,
+  "name": "Flight School",
+  "description": "Flap on the left, poop on the right. Hit 3 cars. Don't crash!",
+  "timeLimit": 45,
+  "scrollSpeed": 100,
+  "rageFillPerEscape": 0.2,
+  "food": {
+    "types": ["berries"],
+    "minInterval": 10,
+    "maxInterval": 14
+  },
+  "traffic": [
+    {
+      "from": 2,
+      "to": 45,
+      "interval": 3.2,
+      "groundSpeed": [0, 25],
+      "cars": { "sedan": 1 },
+      "lanes": [1]
+    }
+  ],
+  "objectives": [
+    { "type": "splatCars", "count": 3 }
+  ],
+  "stars": {
+    "two": 400,
+    "three": 700
+  }
+}

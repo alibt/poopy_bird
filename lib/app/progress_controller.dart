@@ -1,40 +1,49 @@
 import 'package:flutter/foundation.dart';
 
 import '../achievements/achievements.dart';
+import '../audio/game_audio.dart';
 import '../economy/catalog.dart';
 import '../economy/rewards.dart';
+import '../juice/feedback.dart';
 import '../levels/level_definition.dart';
 import '../levels/level_repository.dart';
+import '../monetization/ads.dart';
 import '../progress/level_result.dart';
 import '../progress/player_progress.dart';
-import '../monetization/ads.dart';
 import '../progress/progress_repository.dart';
+import '../settings/game_settings.dart';
+import '../settings/settings_store.dart';
 
-/// App-wide state for menus: the world list, the player's progress, and
-/// what is unlocked. Screens listen to it through [AppScope].
+/// App-wide state for menus: worlds, progress, settings, audio and unlocks.
 class ProgressController extends ChangeNotifier {
   ProgressController({
     required this.levelRepository,
     required this.progressRepository,
+    required this.settingsStore,
+    GameAudio? audio,
     this.ads = const NoAds(),
-  });
+  }) : audio = audio ?? GameAudio() {
+    feedback = GameFeedback(audio: this.audio);
+  }
 
   final LevelRepository levelRepository;
   final ProgressRepository progressRepository;
+  final SettingsStore settingsStore;
   final RewardedAds ads;
+  final GameAudio audio;
+  late final GameFeedback feedback;
 
   List<WorldDefinition> worlds = const [];
   PlayerProgress progress = const PlayerProgress();
+  GameSettings settings = const GameSettings();
 
   /// Debug-only switch that opens every level.
   bool unlockAll = false;
 
-  /// Achievements unlocked but not yet announced, oldest first. The app's
-  /// toast host shows and removes them.
+  /// Achievements unlocked but not yet announced, oldest first.
   final ValueNotifier<List<AchievementDefinition>> unlockQueue =
       ValueNotifier(const []);
 
-  /// Removes the first queued achievement once its toast has been shown.
   void dismissUnlock() {
     final queue = unlockQueue.value;
     if (queue.isNotEmpty) unlockQueue.value = queue.sublist(1);
@@ -45,20 +54,35 @@ class ProgressController extends ChangeNotifier {
   Future<void> load() async {
     worlds = await levelRepository.loadWorlds();
     progress = await progressRepository.load();
+    settings = await settingsStore.load();
+    await audio.init();
+    feedback.apply(settings);
     notifyListeners();
   }
+
+  Future<void> updateSettings(GameSettings next) async {
+    settings = next;
+    await settingsStore.save(next);
+    feedback.apply(next);
+    notifyListeners();
+  }
+
+  Future<void> markTutorialSeen() =>
+      updateSettings(settings.copyWith(seenTutorial: true));
 
   /// Stores a finished run and returns the coins it earned.
   Future<RunReward> record(LevelResult result) async {
     final recorded = await progressRepository.record(result);
     progress = recorded.progress;
+    if (result.levelId == 'tutorial' && result.outcome.isWin) {
+      await markTutorialSeen();
+    }
+    if (recorded.reward.total > 0) audio.sfx('coin.wav');
     await _checkAchievements(run: result);
     notifyListeners();
     return recorded.reward;
   }
 
-  /// Shows a rewarded ad and, if it was watched, pays [reward] again.
-  /// Returns whether the coins were doubled.
   Future<bool> doubleRunCoins(RunReward reward, LevelResult result) async {
     if (reward.total <= 0) return false;
     if (!await ads.show(AdPlacement.doubleCoins)) return false;
@@ -67,20 +91,18 @@ class ProgressController extends ChangeNotifier {
       reason: '${AdPlacement.doubleCoins.id}:${result.levelId}:'
           '${result.finishedAt.toIso8601String()}',
     ));
+    audio.sfx('coin.wav');
     return true;
   }
 
-  /// Debug builds only: free coins for testing the shop.
   Future<void> grantDebugCoins(int amount) {
     assert(kDebugMode);
     return _update(progressRepository.grantCoins(amount, reason: 'debug'));
   }
 
-  /// Throws [ShopException] if the purchase isn't possible.
   Future<void> buyUpgrade(UpgradeId id) =>
       _update(progressRepository.buyUpgrade(id));
 
-  /// Throws [ShopException] if the purchase isn't possible.
   Future<void> buyCosmetic(String id) =>
       _update(progressRepository.buyCosmetic(id));
 
@@ -92,8 +114,6 @@ class ProgressController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Unlocks whatever the latest change earned. Repeats because an
-  /// achievement's coins can earn another (e.g. "Earn 5,000 coins").
   Future<void> _checkAchievements({LevelResult? run}) async {
     for (var pass = 0; pass < 3; pass++) {
       final earned = Achievements.newlyEarned(AchievementContext(
@@ -105,12 +125,15 @@ class ProgressController extends ChangeNotifier {
       progress = await progressRepository
           .unlockAchievements([for (final a in earned) a.id]);
       unlockQueue.value = [...unlockQueue.value, ...earned];
+      audio.sfx('achieve.wav');
+      feedback.hapticMedium();
     }
   }
 
   @override
   void dispose() {
     unlockQueue.dispose();
+    audio.dispose();
     super.dispose();
   }
 
@@ -119,7 +142,6 @@ class ProgressController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The world containing [levelId] and the level's index in it.
   (WorldDefinition, int)? locate(String levelId) {
     for (final world in worlds) {
       final index = world.levelIds.indexOf(levelId);
@@ -128,7 +150,6 @@ class ProgressController extends ChangeNotifier {
     return null;
   }
 
-  /// The level after [levelId] in the same world, or null if it was last.
   String? nextLevelId(String levelId) {
     final found = locate(levelId);
     if (found == null) return null;

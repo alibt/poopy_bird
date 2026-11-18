@@ -17,7 +17,9 @@ import '../components/landing_marker.dart';
 import '../components/poop.dart';
 import '../components/run_scoped.dart';
 import '../components/scenery.dart';
+import '../audio/game_audio.dart';
 import '../economy/catalog.dart';
+import '../juice/feedback.dart';
 import '../levels/run_plan.dart';
 import '../progress/level_result.dart';
 import '../systems/belly.dart';
@@ -45,9 +47,12 @@ class PoopyBirdGame extends FlameGame
     int bestScore = 0,
     this.loadout = const Loadout(),
     this.onRunFinished,
+    GameFeedback? feedback,
+    this.leftHanded = false,
   })  : plan = plan ?? EndlessPlan(),
         random = random ?? Random(),
-        score = ScoreTracker(best: bestScore);
+        score = ScoreTracker(best: bestScore),
+        feedback = feedback ?? GameFeedback(audio: GameAudio());
 
   final RunPlan plan;
   final Random random;
@@ -55,6 +60,12 @@ class PoopyBirdGame extends FlameGame
 
   /// Upgrades and cosmetics for this run.
   final Loadout loadout;
+
+  /// Audio + haptics + shake for this run.
+  final GameFeedback feedback;
+
+  /// Swap flap/poop screen halves.
+  final bool leftHanded;
 
   /// Called once when a run ends. The app layer stores the result; the game
   /// itself never touches storage or the network.
@@ -200,6 +211,12 @@ class PoopyBirdGame extends FlameGame
     outcome = result;
     bird.holdingPoop = false;
     score.finishRun();
+    feedback.audio.stopMusic();
+    if (result == RunOutcome.crashed || result == RunOutcome.rageOut) {
+      feedback.audio.sfx('crash.wav');
+      feedback.hapticHeavy();
+      feedback.shake(camera, intensity: 10, pulses: 4);
+    }
     final level = plan.level;
     final stars =
         level?.stars.starsFor(won: result.isWin, score: score.score) ?? 0;
@@ -288,6 +305,9 @@ class PoopyBirdGame extends FlameGame
       }
     }
     stats.onPoopLanded(splatted);
+    feedback.audio.sfx('splat.wav');
+    feedback.hapticMedium();
+    feedback.shake(camera, intensity: poop.kind == PoopKind.big ? 8 : 5);
     world.add(splatBurst(
       poop.position.clone(),
       random,
@@ -301,6 +321,7 @@ class PoopyBirdGame extends FlameGame
     final multiplier = combo.registerHit();
     final points =
         score.registerHit(basePoints: car.type.points, multiplier: multiplier);
+    if (multiplier > 1) feedback.audio.sfx('combo.wav', volume: 0.7);
     if (car.type.raisesRageOnHit) {
       rage.onCarEscaped();
       stats.onRage(rage.value);
@@ -344,6 +365,7 @@ class PoopyBirdGame extends FlameGame
     if (isFinished) return;
     combo.registerMiss();
     stats.onPoopMissed();
+    feedback.audio.sfx('miss.wav', volume: 0.6);
     world.add(RoadSplat(
       position: poop.position.clone(),
       radius: poop.radius,
@@ -366,6 +388,8 @@ class PoopyBirdGame extends FlameGame
     belly.eat(food.type);
     stats.onFoodEaten();
     food.removeFromParent();
+    feedback.audio.sfx('eat.wav');
+    feedback.hapticLight();
     world.add(FloatingText(
       food.type.label,
       position: food.position.clone(),
@@ -373,15 +397,28 @@ class PoopyBirdGame extends FlameGame
     ));
   }
 
-  void onBellyEmpty() => hud.flashEmpty();
+  void onBellyEmpty() {
+    hud.flashEmpty();
+    feedback.hapticLight();
+  }
 
   // ─── Input ────────────────────────────────────────────────────────────────
-  // Touch: left half flaps, right half poops and keeps pooping while held.
+  // Touch: left half flaps, right half poops (swapped when left-handed).
   // Each finger is tracked separately, so both halves work at once.
 
   final Set<int> _poopPointers = {};
 
-  bool _isPoopSide(Vector2 canvasPosition) => canvasPosition.x >= size.x / 2;
+  bool _isPoopSide(Vector2 canvasPosition) {
+    final right = canvasPosition.x >= size.x / 2;
+    return leftHanded ? !right : right;
+  }
+
+  void _onFlap() {
+    bird.flap();
+    feedback.audio.sfx('flap.wav', volume: 0.5);
+  }
+
+  void _onPoopAttempt() => bird.poop();
 
   void _releasePointer(int pointerId) {
     _poopPointers.remove(pointerId);
@@ -394,9 +431,9 @@ class PoopyBirdGame extends FlameGame
     if (_isPoopSide(event.canvasPosition)) {
       _poopPointers.add(event.pointerId);
       bird.holdingPoop = true;
-      bird.poop();
+      _onPoopAttempt();
     } else {
-      bird.flap();
+      _onFlap();
     }
   }
 
@@ -472,7 +509,7 @@ class PoopyBirdGame extends FlameGame
         _poopPointers.isNotEmpty || keysPressed.any(_poopKeys.contains);
 
     if (down && _flapKeys.contains(key)) {
-      bird.flap();
+      _onFlap();
       return KeyEventResult.handled;
     }
     return _poopKeys.contains(key)
