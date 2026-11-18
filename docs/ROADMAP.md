@@ -186,6 +186,8 @@ Check the licence of the current placeholder art before any release; it will all
 
 Remaining polish (not blocking M5): hazard sprites (power lines, crows, drones, sprinklers), coffee / golden-seed food, sunroof open/close timing, mayor limo weak spots, world-tinted parallax plates.
 
+Art beauty pass (post-M7): softer 4-step toon shading, richer bird mascot, car grille/arches/door seams, varied skyline roofs + lit windows, smoother food meshes — re-exported via `tools/blender/export_all.py`.
+
 ### M6 — Polish
 - [x] Music and SFX (`flame_audio` + procedural stubs in `assets/audio/`; swap for Kenney/CC0 anytime)
 - [x] Juice: screen shake, haptics, fade/slide transitions

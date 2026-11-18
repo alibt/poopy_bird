@@ -183,15 +183,51 @@ def build_car(
         win = extrude_profile(f"{kind}_win", win_pts, width=1.18, material=glass)
         parts.append(win)
 
-    # Bumpers + lights.
+    # Bumpers + grille + lights.
     parts.append(mesh_cube(f"{kind}_fb", (0.18, 1.2, 0.2), (length * 0.48, 0, 0.28), chrome))
     parts.append(mesh_cube(f"{kind}_rb", (0.16, 1.2, 0.18), (-length * 0.48, 0, 0.28), chrome))
+    grille = mesh_cube(
+        f"{kind}_grille", (0.06, 0.7, 0.22), (length * 0.50, 0, 0.42), dark
+    )
+    parts.append(grille)
+    for i, gy in enumerate((-0.18, 0.0, 0.18)):
+        parts.append(
+            mesh_cube(
+                f"{kind}_gbar{i}", (0.04, 0.08, 0.18),
+                (length * 0.505, gy, 0.42), chrome,
+            )
+        )
     parts.append(_headlight(f"{kind}_hl", (length * 0.47, 0.35, 0.45)))
+    parts.append(_headlight(f"{kind}_hl2", (length * 0.47, -0.35, 0.45)))
     parts.append(_taillight(f"{kind}_tl", (-length * 0.48, 0.35, 0.48)))
+    parts.append(_taillight(f"{kind}_tl2", (-length * 0.48, -0.35, 0.48)))
+
+    # Character line + door seam for silhouette interest.
+    parts.append(
+        mesh_cube(
+            f"{kind}_cline", (length * 0.7, 1.17, 0.04), (0.05, 0, 0.48),
+            toon_material(f"{kind}_cline", tuple(max(0, c * 0.75) for c in body_color[:3]) + (1.0,), steps=2),
+        )
+    )
+    parts.append(mesh_cube(f"{kind}_door", (0.03, 1.18, 0.45), (0.05, 0, 0.55), dark))
 
     mirror = mesh_cube(f"{kind}_mirror", (0.1, 0.2, 0.1), (length * 0.08, 0.6, 0.9), dark)
     bevel(mirror, width=0.02, segments=2)
     parts.append(mirror)
+
+    # Wheel arches so the body doesn't read as a floating slab.
+    arch_mat = toon_material(f"{kind}_arch", (0.06, 0.06, 0.08, 1.0), steps=2)
+    arch_xs = (-length * 0.32, length * 0.3)
+    if kind == "limo":
+        arch_xs = (-length * 0.38, -0.25, 0.4, length * 0.35)
+    elif kind == "bus":
+        arch_xs = (-length * 0.35, 0.0, length * 0.32)
+    for x in arch_xs:
+        arch = mesh_cylinder(
+            f"{kind}_arch_{x:.2f}", 0.30, 1.22, (x, 0, 0.06), arch_mat,
+            vertices=18, rotation=(math.radians(90), 0, 0),
+        )
+        parts.append(arch)
 
     if kind == "sports":
         spoiler = mesh_cube(
@@ -258,7 +294,7 @@ def build_car(
 def build_car_wash_truck(*, with_outline: bool = True) -> bpy.types.Object:
     blue = toon_material("cwt_cab", (0.12, 0.45, 0.9, 1.0))
     tank = toon_material("cwt_tank", (0.55, 0.82, 0.95, 1.0))
-    yellow = toon_material("cwt_brush", (1.0, 0.85, 0.12, 1.0))
+    yellow = toon_material("cwt_brush", (1.0, 0.88, 0.08, 1.0), steps=3)
     white = toon_material("cwt_stripe", (0.96, 0.96, 0.98, 1.0))
     glass = toon_material("cwt_glass", (0.5, 0.78, 0.95, 1.0), steps=2)
     dark = toon_material("cwt_dark", (0.12, 0.12, 0.14, 1.0), steps=2)
@@ -267,24 +303,24 @@ def build_car_wash_truck(*, with_outline: bool = True) -> bpy.types.Object:
     bevel(cab, width=0.08, segments=3)
     window = mesh_cube("cwt_window", (0.12, 0.95, 0.5), (2.05, 0, 1.05), glass)
     tank_body = mesh_cylinder(
-        "cwt_tank", 0.7, 2.6, (-0.4, 0, 1.0), tank,
-        vertices=24, rotation=(0, math.radians(90), 0),
+        "cwt_tank", 0.75, 2.7, (-0.45, 0, 1.05), tank,
+        vertices=28, rotation=(0, math.radians(90), 0),
     )
-    tank_body.scale = (1.0, 0.9, 1.0)
+    tank_body.scale = (1.0, 0.92, 1.0)
     apply_loc_rot_scale(tank_body)
-    stripe = mesh_cube("cwt_stripe", (2.5, 1.3, 0.16), (-0.4, 0, 0.85), white)
-    # Spinning wash brushes — fluffy spheres on poles.
+    stripe = mesh_cube("cwt_stripe", (2.6, 1.32, 0.18), (-0.45, 0, 0.9), white)
+    # Spinning wash brushes — bright fluffy spheres on poles.
     parts = [cab, window, tank_body, stripe]
-    for i, x in enumerate((-0.2, -1.2)):
-        pole = mesh_cylinder(f"cwt_pole{i}", 0.06, 0.7, (x, 0, 1.55), dark)
+    for i, x in enumerate((-0.15, -1.25)):
+        pole = mesh_cylinder(f"cwt_pole{i}", 0.07, 0.85, (x, 0, 1.65), dark)
         brush = mesh_uv_sphere(
-            f"cwt_brush{i}", 0.38, (x, 0, 1.95), yellow,
-            segments=16, scale=(1.0, 1.0, 0.85),
+            f"cwt_brush{i}", 0.48, (x, 0, 2.15), yellow,
+            segments=24, ring_count=16, scale=(1.05, 1.05, 0.9),
         )
         bristle = mesh_uv_sphere(
-            f"cwt_br{i}", 0.42, (x, 0, 1.9),
-            toon_material(f"cwt_br{i}", (1.0, 0.92, 0.35, 1.0), steps=2),
-            segments=12, scale=(1.15, 1.15, 0.55),
+            f"cwt_br{i}", 0.55, (x, 0, 2.1),
+            toon_material(f"cwt_br{i}", (1.0, 0.95, 0.25, 1.0), steps=2),
+            segments=18, scale=(1.2, 1.2, 0.5),
         )
         parts.extend([pole, brush, bristle])
     for x in (-1.5, -0.2, 1.4):
@@ -388,108 +424,135 @@ def build_bird(
     with_outline: bool = True,
 ) -> bpy.types.Object:
     """Cartoon mascot bird facing +X — big flap silhouette for sprite animation."""
-    yellow = toon_material("bird_body", (1.0, 0.88, 0.2, 1.0), steps=3)
-    wing_mat = toon_material("bird_wing", (1.0, 0.7, 0.1, 1.0), steps=3)
-    wing_tip = toon_material("bird_tip", (0.95, 0.4, 0.05, 1.0), steps=2)
-    belly_mat = toon_material("bird_belly", (1.0, 0.95, 0.7, 1.0), steps=2)
-    orange = toon_material("bird_beak", (1.0, 0.5, 0.08, 1.0), steps=2)
+    yellow = toon_material("bird_body", (1.0, 0.86, 0.18, 1.0), steps=4)
+    wing_mat = toon_material("bird_wing", (1.0, 0.68, 0.08, 1.0), steps=4)
+    wing_tip = toon_material("bird_tip", (0.95, 0.38, 0.05, 1.0), steps=3)
+    belly_mat = toon_material("bird_belly", (1.0, 0.96, 0.78, 1.0), steps=3)
+    orange = toon_material("bird_beak", (1.0, 0.48, 0.06, 1.0), steps=3)
     white = toon_material("bird_eye", (1.0, 1.0, 1.0, 1.0), steps=2)
     black = toon_material("bird_pupil", (0.05, 0.05, 0.07, 1.0), steps=2)
-    blush = toon_material("bird_blush", (1.0, 0.5, 0.4, 1.0), steps=2)
-    crest_mat = toon_material("bird_crest", (1.0, 0.45, 0.1, 1.0), steps=2)
-    foot_mat = toon_material("bird_foot", (1.0, 0.42, 0.08, 1.0), steps=2)
+    blush = toon_material("bird_blush", (1.0, 0.48, 0.42, 1.0), steps=2)
+    crest_mat = toon_material("bird_crest", (1.0, 0.42, 0.08, 1.0), steps=3)
+    foot_mat = toon_material("bird_foot", (1.0, 0.4, 0.06, 1.0), steps=3)
+    brow = toon_material("bird_brow", (0.85, 0.55, 0.1, 1.0), steps=2)
 
     z0 = body_bob
     sx, sz = 1.0 / math.sqrt(squash), squash
 
-    # Clear head/body separation (not one blob).
+    # Plumper mascot: clear head/body, soft belly, readable beak.
     body = mesh_uv_sphere(
-        "bird_body", 0.62, (0.05, 0.0, z0 - 0.05), yellow,
-        segments=48, ring_count=28, scale=(1.35 * sx, 0.78, 1.1 * sz),
+        "bird_body", 0.68, (0.02, 0.0, z0 - 0.02), yellow,
+        segments=56, ring_count=32, scale=(1.28 * sx, 0.82, 1.12 * sz),
     )
     belly = mesh_uv_sphere(
-        "bird_belly", 0.42, (0.18, 0.08, z0 - 0.18), belly_mat,
-        segments=32, scale=(1.15 * sx, 0.55, 0.85 * sz),
+        "bird_belly", 0.48, (0.22, 0.1, z0 - 0.2), belly_mat,
+        segments=36, scale=(1.2 * sx, 0.58, 0.9 * sz),
     )
     neck = mesh_uv_sphere(
-        "bird_neck", 0.22, (0.45, 0.0, z0 + 0.28), yellow,
-        segments=24, scale=(0.9, 0.7, 0.85),
+        "bird_neck", 0.24, (0.48, 0.0, z0 + 0.32), yellow,
+        segments=28, scale=(0.95, 0.72, 0.9),
     )
     head = mesh_uv_sphere(
-        "bird_head", 0.42, (0.72, 0.0, z0 + 0.55), yellow,
-        segments=40, scale=(1.05, 0.85, 1.05),
+        "bird_head", 0.46, (0.78, 0.0, z0 + 0.58), yellow,
+        segments=44, scale=(1.08, 0.88, 1.08),
     )
 
     beak_u = mesh_cone(
-        "bird_beak_u", 0.14, 0.38, (1.12, 0.0, z0 + 0.55), orange,
-        vertices=14, rotation=(0, math.radians(90), math.radians(-6)),
+        "bird_beak_u", 0.15, 0.42, (1.22, 0.0, z0 + 0.58), orange,
+        vertices=16, rotation=(0, math.radians(90), math.radians(-8)),
     )
     beak_l = mesh_cone(
-        "bird_beak_l", 0.1, 0.26, (1.08, 0.0, z0 + 0.45), orange,
-        vertices=12, rotation=(0, math.radians(90), math.radians(14)),
+        "bird_beak_l", 0.11, 0.28, (1.16, 0.0, z0 + 0.46), orange,
+        vertices=14, rotation=(0, math.radians(90), math.radians(16)),
     )
 
+    # Near eye (big) + far eye peek so the face reads in 3/4.
     eye = mesh_uv_sphere(
-        "bird_eye", 0.16, (0.92, 0.3, z0 + 0.62), white,
-        segments=18, scale=(1.0, 0.9, blink),
+        "bird_eye", 0.18, (0.98, 0.32, z0 + 0.66), white,
+        segments=20, scale=(1.05, 0.95, blink),
     )
     pupil = mesh_uv_sphere(
-        "bird_pupil", 0.085, (1.0, 0.34, z0 + 0.62), black,
-        segments=14, scale=(1.0, 0.95, blink),
+        "bird_pupil", 0.09, (1.08, 0.36, z0 + 0.66), black,
+        segments=16, scale=(1.0, 0.95, blink),
     )
     highlight = mesh_uv_sphere(
-        "bird_hi", 0.04, (1.04, 0.38, z0 + 0.68), white,
-        segments=8, scale=(1.0, 1.0, blink),
+        "bird_hi", 0.045, (1.12, 0.4, z0 + 0.72), white,
+        segments=10, scale=(1.0, 1.0, blink),
+    )
+    eye_f = mesh_uv_sphere(
+        "bird_eye_f", 0.12, (0.95, -0.22, z0 + 0.64), white,
+        segments=16, scale=(0.9, 0.85, blink * 0.95),
+    )
+    pupil_f = mesh_uv_sphere(
+        "bird_pupil_f", 0.055, (1.0, -0.24, z0 + 0.64), black,
+        segments=12, scale=(1.0, 0.9, blink * 0.95),
     )
     cheek = mesh_uv_sphere(
-        "bird_cheek", 0.09, (0.82, 0.34, z0 + 0.48), blush,
-        segments=12, scale=(1.15, 0.45, 0.7),
+        "bird_cheek", 0.1, (0.88, 0.36, z0 + 0.5), blush,
+        segments=14, scale=(1.2, 0.42, 0.75),
     )
+    eyebrow = mesh_cube(
+        "bird_brow", (0.16, 0.06, 0.05), (0.95, 0.34, z0 + 0.8), brow
+    )
+    bevel(eyebrow, width=0.015, segments=2)
 
-    # Twin crest feathers.
     crest_l = mesh_cone(
-        "bird_crest_l", 0.08, 0.32, (0.62, 0.06, z0 + 0.95), crest_mat,
-        vertices=8, rotation=(math.radians(8), math.radians(-20), 0),
+        "bird_crest_l", 0.09, 0.38, (0.68, 0.08, z0 + 1.02), crest_mat,
+        vertices=10, rotation=(math.radians(10), math.radians(-18), 0),
     )
     crest_r = mesh_cone(
-        "bird_crest_r", 0.07, 0.28, (0.7, -0.02, z0 + 0.92), crest_mat,
-        vertices=8, rotation=(math.radians(-5), math.radians(-35), 0),
+        "bird_crest_r", 0.08, 0.32, (0.78, -0.04, z0 + 0.98), crest_mat,
+        vertices=10, rotation=(math.radians(-6), math.radians(-38), 0),
+    )
+    crest_m = mesh_cone(
+        "bird_crest_m", 0.06, 0.26, (0.72, 0.02, z0 + 1.05), wing_tip,
+        vertices=8, rotation=(math.radians(2), math.radians(-28), 0),
     )
 
-    # Big flapping wing — angle 0 = straight up, 90 = forward, 180 = down.
-    shoulder = (-0.05, 0.22, z0 + 0.15)
+    shoulder = (-0.02, 0.26, z0 + 0.18)
     wing_parts = _wing_piece("bird_wing", wing_mat, wing_tip, shoulder, wing_angle)
+    # Far-side stub wing for volume.
+    far_wing = mesh_uv_sphere(
+        "bird_wing_far", 0.28, (-0.05, -0.35, z0 + 0.05), wing_mat,
+        segments=18, scale=(1.1, 0.35, 0.7),
+    )
 
-    # Tail fan.
     tail_parts = []
-    for i, spread in enumerate((-28 - tail_fan, -10, 10, 28 + tail_fan)):
+    for i, spread in enumerate((-32 - tail_fan, -12, 8, 28 + tail_fan, 42 + tail_fan * 0.5)):
         t = mesh_cone(
-            f"bird_tail{i}", 0.12, 0.5,
-            (-0.7, 0.04 * (i - 1.5), z0 + 0.05),
-            wing_tip if i in (0, 3) else wing_mat,
-            vertices=9, rotation=(0, math.radians(spread + 180), 0),
+            f"bird_tail{i}", 0.11, 0.55,
+            (-0.78, 0.05 * (i - 2), z0 + 0.06),
+            wing_tip if i in (0, 4) else wing_mat,
+            vertices=10, rotation=(0, math.radians(spread + 180), 0),
         )
         tail_parts.append(t)
 
-    # Visible cartoon feet.
     leg_l = mesh_cylinder(
-        "bird_leg_l", 0.04, 0.22, (0.2, 0.14, z0 - 0.55), foot_mat, vertices=8
+        "bird_leg_l", 0.045, 0.26, (0.22, 0.16, z0 - 0.58), foot_mat, vertices=8
     )
     leg_r = mesh_cylinder(
-        "bird_leg_r", 0.04, 0.22, (0.2, -0.06, z0 - 0.55), foot_mat, vertices=8
+        "bird_leg_r", 0.045, 0.26, (0.22, -0.08, z0 - 0.58), foot_mat, vertices=8
     )
     foot_l = mesh_cube(
-        "bird_foot_l", (0.22, 0.1, 0.06), (0.28, 0.14, z0 - 0.66), foot_mat
+        "bird_foot_l", (0.26, 0.12, 0.07), (0.32, 0.16, z0 - 0.72), foot_mat
     )
     foot_r = mesh_cube(
-        "bird_foot_r", (0.22, 0.1, 0.06), (0.28, -0.06, z0 - 0.66), foot_mat
+        "bird_foot_r", (0.26, 0.12, 0.07), (0.32, -0.08, z0 - 0.72), foot_mat
     )
-    bevel(foot_l, width=0.02, segments=2)
-    bevel(foot_r, width=0.02, segments=2)
+    bevel(foot_l, width=0.025, segments=2)
+    bevel(foot_r, width=0.025, segments=2)
+    # Tiny toes.
+    for i, ox in enumerate((0.08, 0.0, -0.08)):
+        toe = mesh_cube(
+            f"bird_toe{i}", (0.1, 0.04, 0.035),
+            (0.42, 0.16 + ox * 0.3, z0 - 0.72), foot_mat,
+        )
+        tail_parts.append(toe)
 
     parts = [
-        body, belly, neck, head, beak_u, beak_l, eye, pupil, highlight, cheek,
-        crest_l, crest_r, *wing_parts, *tail_parts, leg_l, leg_r, foot_l, foot_r,
+        body, belly, neck, head, beak_u, beak_l, eye, pupil, highlight, eye_f,
+        pupil_f, cheek, eyebrow, crest_l, crest_r, crest_m, far_wing,
+        *wing_parts, *tail_parts, leg_l, leg_r, foot_l, foot_r,
     ]
     return join_objects(parts, "bird", smooth=True)
 
@@ -536,10 +599,10 @@ def build_food(
             [(-0.22, 0.08, 0.0), (0.24, 0.05, 0.02), (0.02, -0.08, 0.28),
              (-0.05, 0.18, 0.2)]
         ):
-            b = mesh_uv_sphere(f"b{i}", 0.26, (ox, oy, oz + bounce), berry, segments=18)
+            b = mesh_uv_sphere(f"b{i}", 0.26, (ox, oy, oz + bounce), berry, segments=32, ring_count=20)
             h = mesh_uv_sphere(
                 f"bh{i}", 0.08, (ox + 0.08, oy + 0.1, oz + 0.1 + bounce), highlight,
-                segments=8, scale=(1.0, 0.6, 0.7),
+                segments=12, scale=(1.0, 0.6, 0.7),
             )
             parts.extend([b, h])
         stem = mesh_cylinder("stem", 0.03, 0.2, (0.05, 0, 0.55 + bounce), leaf)
@@ -692,68 +755,131 @@ def build_tire(*, with_outline: bool = True) -> bpy.types.Object:
 def build_skyline_tile(*, seed: int, near: bool, length: float = 12.0):
     rng = random.Random(seed)
     if near:
-        body_c = (0.38, 0.48, 0.58, 1.0)
-        win_c = (0.98, 0.9, 0.5, 1.0)
-        h_range = (1.4, 3.2)
+        body_c = (0.32, 0.42, 0.55, 1.0)
+        accent_c = (0.28, 0.36, 0.48, 1.0)
+        shop_c = (0.45, 0.35, 0.28, 1.0)
+        win_c = (1.0, 0.92, 0.55, 1.0)
+        win_off = (0.35, 0.42, 0.55, 1.0)
+        h_range = (1.5, 3.4)
     else:
-        body_c = (0.58, 0.68, 0.8, 1.0)
-        win_c = (0.75, 0.85, 0.92, 1.0)
-        h_range = (2.0, 4.5)
+        body_c = (0.55, 0.66, 0.8, 1.0)
+        accent_c = (0.48, 0.58, 0.72, 1.0)
+        shop_c = (0.5, 0.55, 0.62, 1.0)
+        win_c = (0.82, 0.9, 0.98, 1.0)
+        win_off = (0.5, 0.58, 0.68, 1.0)
+        h_range = (2.2, 4.8)
 
-    body_mat = toon_material(f"sky_{seed}_body", body_c, steps=2)
+    body_mat = toon_material(f"sky_{seed}_body", body_c, steps=3)
+    accent_mat = toon_material(f"sky_{seed}_acc", accent_c, steps=2)
+    shop_mat = toon_material(f"sky_{seed}_shop", shop_c, steps=2)
     win_mat = toon_material(f"sky_{seed}_win", win_c, steps=2)
+    win_off_mat = toon_material(f"sky_{seed}_wo", win_off, steps=2)
     objs = []
     x = -length * 0.5
     while x < length * 0.5:
-        w = 0.75 + rng.random() * 1.2
+        w = 0.7 + rng.random() * 1.35
         h = h_range[0] + rng.random() * (h_range[1] - h_range[0])
+        style = rng.choice(["block", "setback", "tower", "pitched"])
+        cx = x + w * 0.5
+
         b = mesh_cube(
-            f"b_{seed}_{len(objs)}", (w, 0.7, h), (x + w * 0.5, 0, h * 0.5), body_mat
+            f"b_{seed}_{len(objs)}", (w, 0.85 if near else 0.65, h),
+            (cx, 0, h * 0.5), body_mat,
         )
-        bevel(b, width=0.04, segments=2)
+        bevel(b, width=0.05, segments=2)
         objs.append(b)
-        # Roof water tower / antenna occasionally.
-        if rng.random() > 0.65:
+
+        # Ground-floor shop strip.
+        if near and h > 1.8:
             objs.append(
-                mesh_cylinder(
-                    f"ant_{len(objs)}", 0.04, 0.45,
-                    (x + w * 0.5, 0, h + 0.2), body_mat, vertices=6,
+                mesh_cube(
+                    f"shop_{len(objs)}", (w * 0.96, 0.88, 0.45),
+                    (cx, 0.02, 0.28), shop_mat,
                 )
             )
-        wy = 0.45
-        while wy < h - 0.35:
-            wx = x + 0.18
-            while wx < x + w - 0.28:
-                if rng.random() > 0.15:
-                    objs.append(
-                        mesh_cube(
-                            f"w_{seed}_{len(objs)}",
-                            (0.16, 0.06, 0.2),
-                            (wx, 0.36, wy),
-                            win_mat,
-                        )
+
+        # Roof variety.
+        if style == "setback" and h > 2.2:
+            objs.append(
+                mesh_cube(
+                    f"set_{len(objs)}", (w * 0.65, 0.7, 0.55),
+                    (cx, 0, h + 0.2), accent_mat,
+                )
+            )
+        elif style == "tower":
+            objs.append(
+                mesh_cube(
+                    f"tow_{len(objs)}", (w * 0.35, 0.55, 0.9),
+                    (cx + w * 0.15, 0, h + 0.35), accent_mat,
+                )
+            )
+            objs.append(
+                mesh_cylinder(
+                    f"ant_{len(objs)}", 0.035, 0.55,
+                    (cx + w * 0.15, 0, h + 0.95), accent_mat, vertices=6,
+                )
+            )
+        elif style == "pitched":
+            objs.append(
+                mesh_cone(
+                    f"pit_{len(objs)}", w * 0.55, 0.45, (cx, 0, h + 0.15),
+                    accent_mat, vertices=4, rotation=(0, 0, math.radians(45)),
+                )
+            )
+        elif rng.random() > 0.55:
+            objs.append(
+                mesh_cylinder(
+                    f"ant_{len(objs)}", 0.04, 0.5,
+                    (cx, 0, h + 0.22), body_mat, vertices=6,
+                )
+            )
+            if rng.random() > 0.6:
+                objs.append(
+                    mesh_cylinder(
+                        f"tank_{len(objs)}", 0.14, 0.22,
+                        (cx - w * 0.2, 0, h + 0.12), accent_mat,
+                        vertices=10, rotation=(0, math.radians(90), 0),
                     )
-                wx += 0.32
-            wy += 0.42
-        x += w + 0.12 + rng.random() * 0.4
+                )
+
+        # Window grid with lit / dark mix.
+        wy = 0.7 if near else 0.55
+        while wy < h - 0.3:
+            wx = x + 0.16
+            while wx < x + w - 0.22:
+                lit = rng.random() > (0.22 if near else 0.35)
+                objs.append(
+                    mesh_cube(
+                        f"w_{seed}_{len(objs)}",
+                        (0.14, 0.07, 0.18),
+                        (wx, 0.4, wy),
+                        win_mat if lit else win_off_mat,
+                    )
+                )
+                wx += 0.28 + rng.random() * 0.06
+            wy += 0.38 + rng.random() * 0.08
+        x += w + 0.1 + rng.random() * 0.35
     return objs
 
 
 def build_cloud_tile():
-    white = toon_material("cloud", (0.98, 0.98, 1.0, 1.0), steps=2)
+    white = toon_material("cloud", (0.99, 0.99, 1.0, 1.0), steps=3)
+    soft = toon_material("cloud_soft", (0.9, 0.93, 1.0, 1.0), steps=2)
     blobs = [
-        ((-3.5, 0, 1.2), 0.95),
-        ((-2.5, 0, 1.45), 0.75),
-        ((-1.7, 0, 1.2), 0.85),
-        ((0.8, 0, 2.1), 1.15),
-        ((1.9, 0, 2.35), 0.9),
-        ((2.9, 0, 2.0), 0.75),
-        ((4.6, 0, 1.1), 0.8),
-        ((5.5, 0, 1.25), 0.6),
+        ((-3.5, 0, 1.2), 0.95, white),
+        ((-2.5, 0, 1.45), 0.75, white),
+        ((-1.7, 0, 1.2), 0.85, soft),
+        ((0.8, 0, 2.1), 1.15, white),
+        ((1.9, 0, 2.35), 0.9, soft),
+        ((2.9, 0, 2.0), 0.75, white),
+        ((4.6, 0, 1.1), 0.8, soft),
+        ((5.5, 0, 1.25), 0.6, white),
+        ((-0.4, 0, 1.8), 0.55, soft),
+        ((3.6, 0, 2.4), 0.5, white),
     ]
     return [
         mesh_uv_sphere(
-            f"cloud_{i}", r, loc, white, segments=18, scale=(1.7, 0.75, 0.95)
+            f"cloud_{i}", r, loc, mat, segments=20, scale=(1.75, 0.78, 0.98)
         )
-        for i, (loc, r) in enumerate(blobs)
+        for i, (loc, r, mat) in enumerate(blobs)
     ]

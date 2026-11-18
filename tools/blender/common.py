@@ -34,7 +34,7 @@ def reset_scene() -> bpy.types.Scene:
     scene.render.resolution_percentage = 100
     scene.render.use_freestyle = False
 
-    # Flat, stable lighting for toon stills.
+    # Soft studio lighting — readable cel bands with a warm key + cool fill.
     world = bpy.data.worlds.new("ToonWorld")
     scene.world = world
     world.use_nodes = True
@@ -42,27 +42,35 @@ def reset_scene() -> bpy.types.Scene:
     links = world.node_tree.links
     nodes.clear()
     bg = nodes.new("ShaderNodeBackground")
-    bg.inputs["Color"].default_value = (0.55, 0.72, 0.88, 1.0)
-    bg.inputs["Strength"].default_value = 0.35
+    bg.inputs["Color"].default_value = (0.62, 0.78, 0.95, 1.0)
+    bg.inputs["Strength"].default_value = 0.45
     out = nodes.new("ShaderNodeOutputWorld")
     links.new(bg.outputs["Background"], out.inputs["Surface"])
 
     sun = bpy.data.objects.new("KeyLight", bpy.data.lights.new("KeyLight", "SUN"))
-    sun.data.energy = 4.5
-    sun.rotation_euler = Euler((math.radians(50), math.radians(25), math.radians(40)))
+    sun.data.energy = 5.2
+    sun.data.angle = math.radians(8)
+    sun.rotation_euler = Euler((math.radians(48), math.radians(18), math.radians(35)))
     scene.collection.objects.link(sun)
 
     fill = bpy.data.objects.new(
         "FillLight", bpy.data.lights.new("FillLight", "SUN")
     )
-    fill.data.energy = 1.4
-    fill.rotation_euler = Euler((math.radians(25), math.radians(-50), math.radians(-25)))
+    fill.data.energy = 1.8
+    fill.rotation_euler = Euler((math.radians(30), math.radians(-55), math.radians(-20)))
     scene.collection.objects.link(fill)
 
     rim = bpy.data.objects.new("RimLight", bpy.data.lights.new("RimLight", "SUN"))
-    rim.data.energy = 1.8
-    rim.rotation_euler = Euler((math.radians(-20), math.radians(160), 0))
+    rim.data.energy = 2.4
+    rim.rotation_euler = Euler((math.radians(-25), math.radians(155), 0))
     scene.collection.objects.link(rim)
+
+    bounce = bpy.data.objects.new(
+        "BounceLight", bpy.data.lights.new("BounceLight", "SUN")
+    )
+    bounce.data.energy = 0.7
+    bounce.rotation_euler = Euler((math.radians(100), math.radians(10), 0))
+    scene.collection.objects.link(bounce)
     return scene
 
 
@@ -70,10 +78,11 @@ def toon_material(
     name: str,
     color: tuple[float, float, float, float],
     *,
-    steps: int = 3,
-    roughness: float = 0.85,
+    steps: int = 4,
+    roughness: float = 0.7,
+    soft: bool = True,
 ) -> bpy.types.Material:
-    """Cel-shaded material via ShaderToRGB + ColorRamp."""
+    """Cel-shaded material via ShaderToRGB + ColorRamp (soft bands + highlight)."""
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
@@ -81,40 +90,46 @@ def toon_material(
     nodes.clear()
 
     output = nodes.new("ShaderNodeOutputMaterial")
-    output.location = (500, 0)
+    output.location = (700, 0)
     mix = nodes.new("ShaderNodeMixShader")
-    mix.location = (300, 0)
+    mix.location = (500, 0)
     transparent = nodes.new("ShaderNodeBsdfTransparent")
-    transparent.location = (100, -120)
+    transparent.location = (300, -140)
 
     diffuse = nodes.new("ShaderNodeBsdfDiffuse")
-    diffuse.location = (-400, 80)
+    diffuse.location = (-500, 80)
     diffuse.inputs["Color"].default_value = color
     diffuse.inputs["Roughness"].default_value = roughness
 
     to_rgb = nodes.new("ShaderNodeShaderToRGB")
-    to_rgb.location = (-180, 80)
+    to_rgb.location = (-280, 80)
 
     ramp = nodes.new("ShaderNodeValToRGB")
-    ramp.location = (0, 80)
-    ramp.color_ramp.interpolation = "CONSTANT"
+    ramp.location = (-60, 80)
+    ramp.color_ramp.interpolation = "LINEAR" if soft else "CONSTANT"
     elements = ramp.color_ramp.elements
     while len(elements) > 1:
         elements.remove(elements[-1])
     elements[0].position = 0.0
-    dark = tuple(max(0.0, c * 0.55) for c in color[:3]) + (1.0,)
-    elements[0].color = dark
+    shadow = tuple(max(0.0, c * 0.42) for c in color[:3]) + (1.0,)
+    elements[0].color = shadow
     if steps >= 2:
-        mid = elements.new(0.45)
-        mid.color = tuple(max(0.0, c * 0.82) for c in color[:3]) + (1.0,)
-    bright = elements.new(0.72 if steps >= 3 else 0.55)
-    bright.color = color
+        mid = elements.new(0.38)
+        mid.color = tuple(max(0.0, c * 0.72) for c in color[:3]) + (1.0,)
+    if steps >= 3:
+        base = elements.new(0.62)
+        base.color = color
+    if steps >= 4:
+        hi = elements.new(0.88)
+        hi.color = tuple(min(1.0, c * 1.18 + 0.08) for c in color[:3]) + (1.0,)
+    else:
+        bright = elements.new(0.78 if steps >= 3 else 0.55)
+        bright.color = tuple(min(1.0, c * 1.08) for c in color[:3]) + (1.0,)
 
     emission = nodes.new("ShaderNodeEmission")
-    emission.location = (100, 80)
-    emission.inputs["Strength"].default_value = 1.0
+    emission.location = (220, 80)
+    emission.inputs["Strength"].default_value = 1.05
 
-    # Keep alpha from the base colour for windows etc.
     links.new(diffuse.outputs["BSDF"], to_rgb.inputs["Shader"])
     links.new(to_rgb.outputs["Color"], ramp.inputs["Fac"])
     links.new(ramp.outputs["Color"], emission.inputs["Color"])
@@ -385,15 +400,24 @@ def setup_ortho_camera(
         # Side view: traffic faces +X, camera on +Y looking toward origin.
         cam.location = (center.x, center.y + extent * 3, center.z)
         cam.rotation_euler = Euler((math.radians(90), 0, math.radians(180)))
+    elif axis.upper() == "CAR":
+        # Near-side view with a hint of 3/4 so panels read as volume.
+        dist = extent * 3.05
+        cam.location = (
+            center.x + dist * 0.06,
+            center.y + dist,
+            center.z + dist * 0.05,
+        )
+        direction = center - cam.location
+        cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
     elif axis.upper() == "CHAR":
         # Slight 3/4 for characters — more dimension, still sprite-readable.
-        dist = extent * 3.2
+        dist = extent * 3.35
         cam.location = (
-            center.x + dist * 0.18,
+            center.x + dist * 0.22,
             center.y + dist,
-            center.z + dist * 0.12,
+            center.z + dist * 0.14,
         )
-        # Point at subject.
         direction = center - cam.location
         rot = direction.to_track_quat("-Z", "Y").to_euler()
         cam.rotation_euler = rot

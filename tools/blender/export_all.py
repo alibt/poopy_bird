@@ -96,12 +96,12 @@ def export_bird():
         build_bird(**pose)
         subjects = [o for o in bpy.context.scene.objects if o.type == "MESH"]
         # Slight 3/4 so the wing reads in depth; still faces +X (right).
-        setup_ortho_camera(subjects, axis="CHAR", resolution=(720, 720), padding=1.3)
+        setup_ortho_camera(subjects, axis="CHAR", resolution=(800, 800), padding=1.28)
         bpy.context.scene.world.node_tree.nodes["Background"].inputs[
             "Strength"
         ].default_value = 0.0
         primary = render_png(IMAGES_DIR / f"bird_{i:02d}.png")
-        png_outline(primary, width=7)
+        png_outline(primary, width=8)
         shutil.copyfile(primary, IMAGES_DIR / f"frame-{i}.png")
 
 
@@ -110,35 +110,35 @@ def export_cars():
         _render_subject(
             f"car_{kind}.png",
             lambda k=kind, c=color: build_car(k, body_color=c),
-            axis="Y",
-            resolution=(768, 420),
+            axis="CAR",
+            resolution=(896, 480),
             outline=6,
-            padding=1.2,
+            padding=1.22,
         )
     shutil.copyfile(IMAGES_DIR / "car_sedan.png", IMAGES_DIR / "car-body.png")
 
     _render_subject(
         "boss_car_wash.png",
         build_car_wash_truck,
-        axis="Y",
-        resolution=(900, 480),
+        axis="CAR",
+        resolution=(960, 520),
         outline=6,
     )
     _render_subject(
         "boss_mayor_limo.png",
         build_mayor_limo,
-        axis="Y",
-        resolution=(900, 400),
+        axis="CAR",
+        resolution=(960, 420),
         outline=6,
     )
     _render_subject(
         "boss_monster_truck.png",
         build_monster_truck,
-        axis="Y",
-        resolution=(768, 560),
+        axis="CAR",
+        resolution=(840, 600),
         outline=6,
     )
-    _render_subject("tire.png", build_tire, axis="Y", resolution=(320, 320), outline=5)
+    _render_subject("tire.png", build_tire, axis="Y", resolution=(360, 360), outline=5)
 
 
 def export_food():

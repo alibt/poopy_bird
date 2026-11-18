@@ -1,8 +1,8 @@
 # Blender toon-render pipeline
 
-Headless Blender 5.3 scripts that build low-poly subjects, apply cel shading
-(ShaderToRGB + ColorRamp), add inverted-hull outlines, and write transparent
-PNGs into `assets/images/`.
+Headless Blender 5.3 scripts that build low-poly subjects, apply soft cel shading
+(ShaderToRGB + multi-step ColorRamp), post-process PNG outlines, and write
+transparent sprites into `assets/images/`.
 
 ## Requirements
 
