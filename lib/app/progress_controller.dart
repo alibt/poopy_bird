@@ -8,6 +8,7 @@ import '../juice/feedback.dart';
 import '../levels/level_definition.dart';
 import '../levels/level_repository.dart';
 import '../monetization/ads.dart';
+import '../monetization/iap.dart';
 import '../progress/level_result.dart';
 import '../progress/player_progress.dart';
 import '../progress/progress_repository.dart';
@@ -22,6 +23,7 @@ class ProgressController extends ChangeNotifier {
     required this.settingsStore,
     GameAudio? audio,
     this.ads = const NoAds(),
+    this.iap = const NoIapStore(),
   }) : audio = audio ?? GameAudio() {
     feedback = GameFeedback(audio: this.audio);
   }
@@ -29,7 +31,8 @@ class ProgressController extends ChangeNotifier {
   final LevelRepository levelRepository;
   final ProgressRepository progressRepository;
   final SettingsStore settingsStore;
-  final RewardedAds ads;
+  RewardedAds ads;
+  final IapStore iap;
   final GameAudio audio;
   late final GameFeedback feedback;
 
@@ -55,6 +58,7 @@ class ProgressController extends ChangeNotifier {
     worlds = await levelRepository.loadWorlds();
     progress = await progressRepository.load();
     settings = await settingsStore.load();
+    if (progress.removeAds) ads = const NoAds();
     await audio.init();
     feedback.apply(settings);
     notifyListeners();
@@ -74,17 +78,26 @@ class ProgressController extends ChangeNotifier {
   Future<RunReward> record(LevelResult result) async {
     final recorded = await progressRepository.record(result);
     progress = recorded.progress;
+    var reward = recorded.reward;
     if (result.levelId == 'tutorial' && result.outcome.isWin) {
       await markTutorialSeen();
     }
-    if (recorded.reward.total > 0) audio.sfx('coin.wav');
+    if (progress.removeAds && reward.total > 0) {
+      progress = await progressRepository.grantCoins(
+        reward.total,
+        reason: 'remove_ads_double:${result.levelId}:'
+            '${result.finishedAt.toIso8601String()}',
+      );
+      reward = reward.withAutoDouble;
+    }
+    if (reward.displayedTotal > 0) audio.sfx('coin.wav');
     await _checkAchievements(run: result);
     notifyListeners();
-    return recorded.reward;
+    return reward;
   }
 
   Future<bool> doubleRunCoins(RunReward reward, LevelResult result) async {
-    if (reward.total <= 0) return false;
+    if (reward.total <= 0 || reward.autoDoubled) return false;
     if (!await ads.show(AdPlacement.doubleCoins)) return false;
     await _update(progressRepository.grantCoins(
       reward.total,
@@ -92,6 +105,24 @@ class ProgressController extends ChangeNotifier {
           '${result.finishedAt.toIso8601String()}',
     ));
     audio.sfx('coin.wav');
+    return true;
+  }
+
+  Future<bool> purchase(IapProduct product) async {
+    if (!iap.isAvailable(product)) return false;
+    if (product == IapProduct.removeAds && progress.removeAds) return false;
+    final result = await iap.purchase(product);
+    if (result == null || !result.ok) return false;
+    await _update(progressRepository.fulfillIap(
+      productId: product.id,
+      orderId: result.orderId,
+      coins: product.coins,
+      cosmeticId: product.cosmeticId,
+      removeAds: product == IapProduct.removeAds,
+    ));
+    if (progress.removeAds) ads = const NoAds();
+    audio.sfx('coin.wav');
+    feedback.hapticMedium();
     return true;
   }
 
@@ -134,6 +165,7 @@ class ProgressController extends ChangeNotifier {
   void dispose() {
     unlockQueue.dispose();
     audio.dispose();
+    iap.dispose();
     super.dispose();
   }
 

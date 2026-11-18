@@ -200,7 +200,8 @@ class _CoinsEarnedState extends State<_CoinsEarned> {
   @override
   Widget build(BuildContext context) {
     final reward = widget.reward;
-    final total = reward.total * (_doubled ? 2 : 1);
+    final showDouble = _doubled || reward.autoDoubled;
+    final total = reward.total * (showDouble ? 2 : 1);
     final bonuses = [
       if (reward.newStarCoins > 0) '${reward.newStarCoins} new stars',
       if (reward.firstClearBonus > 0) '${reward.firstClearBonus} first clear',
@@ -220,12 +221,14 @@ class _CoinsEarnedState extends State<_CoinsEarned> {
                     fontWeight: FontWeight.w900,
                     color: Colors.amber.shade900)),
             CoinCount(coins: total, size: 28),
-            if (_doubled)
-              Text('x2!',
+            if (showDouble)
+              Text(reward.autoDoubled ? 'x2 (No Ads)' : 'x2!',
                   style: TextStyle(
                       fontWeight: FontWeight.w900,
                       color: Colors.green.shade700)),
-            if (widget.onDouble != null && reward.total > 0 && !_doubled)
+            if (widget.onDouble != null &&
+                reward.total > 0 &&
+                !showDouble)
               FilledButton.icon(
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
                 onPressed: _busy ? null : _double,

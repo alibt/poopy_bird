@@ -4,10 +4,11 @@ import '../../app/app_scope.dart';
 import '../../app/progress_controller.dart';
 import '../../components/car.dart' show hueRotation;
 import '../../economy/catalog.dart';
+import '../../monetization/iap.dart';
 import '../../progress/player_progress.dart';
 import '../widgets.dart';
 
-/// Spend coins on upgrades and cosmetics.
+/// Spend coins on upgrades and cosmetics, or buy coin packs.
 class ShopScreen extends StatelessWidget {
   const ShopScreen({super.key});
 
@@ -15,7 +16,7 @@ class ShopScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = AppScope.of(context);
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: SkyBackground(
         child: Column(
           children: [
@@ -29,7 +30,8 @@ class ShopScreen extends StatelessWidget {
               labelStyle: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
               tabs: [
                 Tab(text: 'Upgrades', height: 36),
-                Tab(text: 'Looks', height: 36)
+                Tab(text: 'Looks', height: 36),
+                Tab(text: 'Coins', height: 36),
               ],
             ),
             Expanded(
@@ -42,6 +44,10 @@ class ShopScreen extends StatelessWidget {
                   _Grid(children: [
                     for (final item in Catalog.cosmetics)
                       _CosmeticCard(item: item),
+                  ]),
+                  _Grid(children: [
+                    for (final product in IapProduct.values)
+                      _IapCard(product: product),
                   ]),
                 ],
               ),
@@ -281,6 +287,71 @@ class _CosmeticCard extends StatelessWidget {
               price: item.price,
               affordable: progress.coins >= item.price,
               onPressed: () => _attempt(context, (c) => c.buyCosmetic(item.id)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IapCard extends StatelessWidget {
+  const _IapCard({required this.product});
+
+  final IapProduct product;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = AppScope.of(context);
+    final ownedRemoveAds =
+        product == IapProduct.removeAds && controller.progress.removeAds;
+    final available = controller.iap.isAvailable(product) && !ownedRemoveAds;
+    final price = controller.iap.priceLabel(product);
+
+    return _Card(
+      child: Row(
+        children: [
+          Icon(
+            product == IapProduct.removeAds
+                ? Icons.block_rounded
+                : Icons.monetization_on_rounded,
+            size: 40,
+            color: brandBrown,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(product.title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: brandBrown)),
+                Text(product.description,
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.black54)),
+              ],
+            ),
+          ),
+          if (ownedRemoveAds)
+            const Icon(Icons.check_circle_rounded, color: Colors.green)
+          else
+            FilledButton(
+              key: ValueKey('iap_${product.id}'),
+              style: FilledButton.styleFrom(minimumSize: const Size(88, 36)),
+              onPressed: !available
+                  ? null
+                  : () async {
+                      final ok = await controller.purchase(product);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(ok
+                            ? 'Thanks! ${product.title} unlocked.'
+                            : 'Purchase unavailable right now.'),
+                      ));
+                    },
+              child: Text(price),
             ),
         ],
       ),

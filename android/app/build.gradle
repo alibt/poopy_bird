@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.poopy_bird"
+    namespace = "com.alibt.poopybird"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -17,10 +17,11 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.poopy_bird"
+        applicationId = "com.alibt.poopybird"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // google_mobile_ads requires 23+.
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -42,6 +42,15 @@ abstract interface class ProgressRepository {
   /// Marks achievements as unlocked and pays their rewards. Ids that are
   /// unknown or already unlocked are ignored.
   Future<PlayerProgress> unlockAchievements(List<String> ids);
+
+  /// Applies a verified IAP: coins, optional cosmetic, optional remove-ads.
+  Future<PlayerProgress> fulfillIap({
+    required String productId,
+    required String orderId,
+    required int coins,
+    String? cosmeticId,
+    bool removeAds = false,
+  });
 }
 
 /// Keeps progress in a [KeyValueStore] as JSON, and logs every action to an
@@ -174,6 +183,32 @@ class LocalProgressRepository implements ProgressRepository {
           (p) => p.unlockAchievements(ids, _clock()),
         );
       });
+
+  @override
+  Future<PlayerProgress> fulfillIap({
+    required String productId,
+    required String orderId,
+    required int coins,
+    String? cosmeticId,
+    bool removeAds = false,
+  }) =>
+      _locked(() => _apply(
+            'iap',
+            {
+              'productId': productId,
+              'orderId': orderId,
+              'coins': coins,
+              if (cosmeticId != null) 'cosmeticId': cosmeticId,
+              'removeAds': removeAds,
+            },
+            (p) {
+              var next = p;
+              if (coins > 0) next = next.withCoins(coins);
+              if (cosmeticId != null) next = next.grantCosmetic(cosmeticId);
+              if (removeAds) next = next.withRemoveAds();
+              return next;
+            },
+          ));
 }
 
 /// A [LocalProgressRepository] that forgets everything when the app closes.

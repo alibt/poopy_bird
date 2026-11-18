@@ -187,7 +187,7 @@ void main() {
           .withResult(_run(id: LevelResult.endlessId, stars: 0, score: 900, runId: 'e1'))
           .unlockAchievements(['splat_1'], DateTime.utc(2026, 11, 16));
       final json = progress.toJson();
-      expect(json['schemaVersion'], 3);
+      expect(json['schemaVersion'], 4);
       expect(PlayerProgress.fromJson(json).toJson(), json);
     });
   });

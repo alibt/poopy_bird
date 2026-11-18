@@ -15,12 +15,16 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.6
   flame_audio: ^2.12.2
+  google_mobile_ads: ^9.2.0
+  in_app_purchase: ^3.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
   flame_test: ^2.3.1
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.2.16
 
 flutter:
   uses-material-design: true
@@ -28,3 +32,25 @@ flutter:
     - assets/images/
     - assets/levels/
     - assets/audio/
+    - assets/branding/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: assets/branding/app_icon.png
+  adaptive_icon_background: "#87CEEB"
+  adaptive_icon_foreground: assets/branding/app_icon.png
+  web:
+    generate: true
+    image_path: assets/branding/app_icon.png
+
+flutter_native_splash:
+  color: "#87CEEB"
+  image: assets/branding/splash.png
+  android: true
+  ios: true
+  web: true
+  android_12:
+    color: "#87CEEB"
+    image: assets/branding/splash.png

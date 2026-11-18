@@ -10,6 +10,7 @@ class RunReward {
     this.winBonus = 0,
     this.newStarCoins = 0,
     this.firstClearBonus = 0,
+    this.autoDoubled = false,
   });
 
   final int scoreCoins;
@@ -21,7 +22,21 @@ class RunReward {
   /// One-off bonus for beating a boss for the first time.
   final int firstClearBonus;
 
+  /// True when Remove Ads already applied the ×2 grant.
+  final bool autoDoubled;
+
   int get total => scoreCoins + winBonus + newStarCoins + firstClearBonus;
+
+  /// What the results screen should show after Remove Ads / Double it.
+  int get displayedTotal => total * (autoDoubled ? 2 : 1);
+
+  RunReward get withAutoDouble => RunReward(
+        scoreCoins: scoreCoins,
+        winBonus: winBonus,
+        newStarCoins: newStarCoins,
+        firstClearBonus: firstClearBonus,
+        autoDoubled: true,
+      );
 
   static const RunReward none = RunReward();
 
@@ -30,6 +45,7 @@ class RunReward {
         'winBonus': winBonus,
         'newStarCoins': newStarCoins,
         'firstClearBonus': firstClearBonus,
+        'autoDoubled': autoDoubled,
       };
 }
 

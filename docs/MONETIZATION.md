@@ -48,7 +48,9 @@ Prices are in `lib/economy/catalog.dart`.
 
 - **Code**: the screens see only the `RewardedAds` interface (`lib/monetization/ads.dart`).
 - **Debug builds**: use `DebugRewardedAds`, which pretends an ad was watched.
-- **Release builds**: use `NoAds`, so the ad buttons are hidden until the SDK is added.
+- **Release builds (mobile)**: use `AdMobRewardedAds` with unit ids from
+  `LiveConfig` (Google test ids until `useTestAds` is flipped).
+- **Remove Ads** IAP swaps in `NoAds` and auto-doubles run coins.
 
 Rules:
 

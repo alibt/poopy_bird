@@ -192,6 +192,6 @@ Remaining polish (not blocking M5): hazard sprites (power lines, crows, drones, 
 - [x] Tutorial level (`tutorial.json`); settings screen (music/SFX/haptics/left-handed, same `KeyValueStore`)
 
 ### M7 — Release
-- [ ] Real bundle id (replace `com.example.poopy_bird`), app icons, splash
-- [ ] Ads/IAP live configuration
-- [ ] Store listings and release builds
+- [x] Real bundle id (`com.alibt.poopybird`), app icons, splash (`assets/branding/`)
+- [x] Ads/IAP live configuration (`google_mobile_ads`, `in_app_purchase`, test ids in `LiveConfig`; shop Coins tab)
+- [x] Store listings draft + release checklist ([STORE.md](STORE.md)); release signing / real AdMob ids still required before submit

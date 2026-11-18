@@ -67,11 +67,13 @@ class PlayerProgress {
     this.stats = const LifetimeStats(),
     this.achievements = const {},
     this.endlessTop = const [],
+    this.removeAds = false,
   });
 
   /// 1: levels and endless best. 2: adds coins, upgrades and cosmetics.
   /// 3: adds lifetime stats, achievements and the Endless top list.
-  static const int schemaVersion = 3;
+  /// 4: adds [removeAds].
+  static const int schemaVersion = 4;
 
   /// How many Endless runs the personal top list keeps.
   static const int endlessTopSize = 10;
@@ -99,6 +101,9 @@ class PlayerProgress {
 
   /// Best Endless runs, highest score first.
   final List<EndlessRun> endlessTop;
+
+  /// Player bought Remove Ads (or starter pack that includes it later).
+  final bool removeAds;
 
   bool hasAchievement(String id) => achievements.containsKey(id);
 
@@ -154,6 +159,7 @@ class PlayerProgress {
     LifetimeStats? stats,
     Map<String, DateTime>? achievements,
     List<EndlessRun>? endlessTop,
+    bool? removeAds,
   }) =>
       PlayerProgress(
         levels: levels ?? this.levels,
@@ -166,7 +172,18 @@ class PlayerProgress {
         stats: stats ?? this.stats,
         achievements: achievements ?? this.achievements,
         endlessTop: endlessTop ?? this.endlessTop,
+        removeAds: removeAds ?? this.removeAds,
       );
+
+  PlayerProgress withRemoveAds() => _copy(removeAds: true);
+
+  /// Grants a cosmetic without charging coins (IAP starter pack, etc.).
+  PlayerProgress grantCosmetic(String cosmeticId) {
+    final item = Catalog.cosmetic(cosmeticId);
+    if (item == null) return this;
+    if (owns(cosmeticId)) return this;
+    return _copy(owned: {...owned, cosmeticId}).equip(cosmeticId);
+  }
 
   /// Records a finished run and pays its [RewardRules] reward.
   PlayerProgress withResult(LevelResult result) {
@@ -282,6 +299,7 @@ class PlayerProgress {
         for (final run in json['endlessTop'] as List<dynamic>? ?? const [])
           EndlessRun.fromJson(run as Map<String, dynamic>),
       ],
+      removeAds: json['removeAds'] as bool? ?? false,
     );
   }
 
@@ -300,6 +318,7 @@ class PlayerProgress {
             e.key: e.value.toUtc().toIso8601String(),
         },
         'endlessTop': [for (final run in endlessTop) run.toJson()],
+        'removeAds': removeAds,
       };
 }
 
