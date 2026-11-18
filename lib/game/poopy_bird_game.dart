@@ -251,7 +251,9 @@ class PoopyBirdGame extends FlameGame
     if (!isRunning) return;
     isPausedByPlayer = true;
     bird.holdingPoop = false;
+    bird.diving = false;
     _poopPointers.clear();
+    _divePointers.clear();
     pauseEngine();
     _showIfRegistered(GameOverlays.pauseMenu);
   }
@@ -322,6 +324,7 @@ class PoopyBirdGame extends FlameGame
     started = true;
     isPausedByPlayer = false;
     _poopPointers.clear();
+    _divePointers.clear();
     bird.reset();
     carSpawner.reset();
     foodSpawner.reset();
@@ -351,35 +354,49 @@ class PoopyBirdGame extends FlameGame
 
   void onPoopHitCar(Poop poop, Car car) {
     if (isFinished) return;
-    // A big poop splats every car near the impact, in any lane.
-    final targets = poop.kind == PoopKind.big
-        ? world.children.whereType<Car>().where((c) =>
-            (c.centerX - poop.position.x).abs() <= GameConfig.bigSplatReach)
+    // Big poops and dive-bombs splash nearby cars in any lane.
+    final reach = poop.kind == PoopKind.big
+        ? GameConfig.bigSplatReach
+        : (poop.diveBomb ? GameConfig.diveSplatReach : 0.0);
+    final targets = reach > 0
+        ? world.children.whereType<Car>().where(
+            (c) => (c.centerX - poop.position.x).abs() <= reach)
         : [car];
     var splatted = 0;
     for (final target in targets.toList()) {
       if (target.splat()) {
-        _scoreHit(target);
+        _scoreHit(target, diveBomb: poop.diveBomb);
         if (target.isSplatted) splatted++;
       }
     }
     stats.onPoopLanded(splatted);
     feedback.audio.sfx('splat.wav');
     feedback.hapticMedium();
-    feedback.shake(camera, intensity: poop.kind == PoopKind.big ? 8 : 5);
+    final juicy = poop.kind == PoopKind.big || poop.diveBomb;
+    feedback.shake(camera, intensity: juicy ? 8 : 5);
     world.add(splatBurst(
       poop.position.clone(),
       random,
       color: loadout.poopColor,
-      count: poop.kind == PoopKind.big ? 28 : 12,
-      power: poop.kind == PoopKind.big ? 1.6 : 1,
+      count: juicy ? 28 : 12,
+      power: juicy ? 1.6 : 1,
     ));
+    if (poop.diveBomb && splatted > 0) {
+      world.add(FloatingText(
+        'DIVE!',
+        position: poop.position.clone() - Vector2(0, 24),
+        color: const Color(0xFFFFAB40),
+        fontSize: 20,
+      ));
+    }
   }
 
-  void _scoreHit(Car car) {
+  void _scoreHit(Car car, {bool diveBomb = false}) {
     final multiplier = combo.registerHit();
-    final points =
-        score.registerHit(basePoints: car.type.points, multiplier: multiplier);
+    final base = diveBomb
+        ? (car.type.points * GameConfig.diveScoreBonus).round()
+        : car.type.points;
+    final points = score.registerHit(basePoints: base, multiplier: multiplier);
     onAltitudeFromHit();
     if (multiplier > 1) feedback.audio.sfx('combo.wav', volume: 0.7);
     if (car.type.raisesRageOnHit) {
@@ -474,15 +491,22 @@ class PoopyBirdGame extends FlameGame
   }
 
   // ─── Input ────────────────────────────────────────────────────────────────
-  // Touch: left half flaps, right half poops (swapped when left-handed).
-  // Each finger is tracked separately, so both halves work at once.
+  // Touch (left-handed swaps sides):
+  //   Control side upper = flap, lower = hold to dive-bomb.
+  //   Poop side = hold to poop.
+  // Keyboard: Space/W/Up flap; S/X poop; ArrowDown dive; Esc/P pause.
 
   final Set<int> _poopPointers = {};
+  final Set<int> _divePointers = {};
 
   bool _isPoopSide(Vector2 canvasPosition) {
     final right = canvasPosition.x >= size.x / 2;
     return leftHanded ? !right : right;
   }
+
+  /// Lower half of the flap side = dive hold.
+  bool _isDiveZone(Vector2 canvasPosition) =>
+      !_isPoopSide(canvasPosition) && canvasPosition.y >= size.y * 0.55;
 
   void _onFlap() {
     bird.flap();
@@ -491,18 +515,28 @@ class PoopyBirdGame extends FlameGame
 
   void _onPoopAttempt() => bird.poop();
 
+  void _syncDive() {
+    bird.diving = _divePointers.isNotEmpty;
+  }
+
   void _releasePointer(int pointerId) {
     _poopPointers.remove(pointerId);
+    _divePointers.remove(pointerId);
     bird.holdingPoop = _poopPointers.isNotEmpty;
+    _syncDive();
   }
 
   @override
   void onTapDown(TapDownEvent event) {
     if (!isRunning) return;
-    if (_isPoopSide(event.canvasPosition)) {
+    final pos = event.canvasPosition;
+    if (_isPoopSide(pos)) {
       _poopPointers.add(event.pointerId);
       bird.holdingPoop = true;
       _onPoopAttempt();
+    } else if (_isDiveZone(pos)) {
+      _divePointers.add(event.pointerId);
+      _syncDive();
     } else {
       _onFlap();
     }
@@ -511,17 +545,20 @@ class PoopyBirdGame extends FlameGame
   @override
   void onTapUp(TapUpEvent event) => _releasePointer(event.pointerId);
 
-  // A held finger that moves turns into a drag and cancels the tap; keep
-  // pooping until the finger actually lifts.
   @override
   void onTapCancel(TapCancelEvent event) {}
 
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    if (isRunning && _isPoopSide(event.canvasPosition)) {
+    if (!isRunning) return;
+    final pos = event.canvasPosition;
+    if (_isPoopSide(pos)) {
       _poopPointers.add(event.pointerId);
       bird.holdingPoop = true;
+    } else if (_isDiveZone(pos)) {
+      _divePointers.add(event.pointerId);
+      _syncDive();
     }
   }
 
@@ -537,8 +574,6 @@ class PoopyBirdGame extends FlameGame
     _releasePointer(event.pointerId);
   }
 
-  // Keyboard (desktop/web testing): Space/W/Up flap; hold S/X/Down to poop;
-  // Esc/P pause; Enter starts a level or restarts after the run ends.
   static final Set<LogicalKeyboardKey> _flapKeys = {
     LogicalKeyboardKey.space,
     LogicalKeyboardKey.keyW,
@@ -547,6 +582,8 @@ class PoopyBirdGame extends FlameGame
   static final Set<LogicalKeyboardKey> _poopKeys = {
     LogicalKeyboardKey.keyS,
     LogicalKeyboardKey.keyX,
+  };
+  static final Set<LogicalKeyboardKey> _diveKeys = {
     LogicalKeyboardKey.arrowDown,
   };
   static final Set<LogicalKeyboardKey> _pauseKeys = {
@@ -578,13 +615,16 @@ class PoopyBirdGame extends FlameGame
 
     bird.holdingPoop =
         _poopPointers.isNotEmpty || keysPressed.any(_poopKeys.contains);
+    bird.diving =
+        _divePointers.isNotEmpty || keysPressed.any(_diveKeys.contains);
 
     if (down && _flapKeys.contains(key)) {
       _onFlap();
       return KeyEventResult.handled;
     }
-    return _poopKeys.contains(key)
-        ? KeyEventResult.handled
-        : KeyEventResult.ignored;
+    if (_poopKeys.contains(key) || _diveKeys.contains(key)) {
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 }

@@ -47,3 +47,4 @@ app.*.map.json
 
 # Graphify knowledge-graph output (local tooling cache)
 /graphify-out/
+.artifacts/

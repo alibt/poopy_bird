@@ -30,15 +30,21 @@ class Bird extends PositionComponent
 
   double velocityY = 0;
 
-  /// While true the bird poops whenever the cooldown allows (finger or key
-  /// held down).
+  /// While true the bird poops whenever the cooldown allows.
   bool holdingPoop = false;
+
+  /// Hold to dive under cruise for a risky, stronger drop.
+  bool diving = false;
 
   double _sinceFlap = GameConfig.flapCooldown;
   double _sincePoop = double.infinity;
 
   /// Starts at cruise height — not up in the food band.
   Vector2 get spawnPoint => Vector2(game.size.x * 0.2, game.cruiseY);
+
+  /// True once we've dropped meaningfully below cruise while diving.
+  bool get isDiveBombing =>
+      diving && position.y > game.cruiseY + GameConfig.diveEngagePadding;
 
   @override
   Future<void> onLoad() async {
@@ -55,7 +61,6 @@ class Bird extends PositionComponent
       _visual.paint.colorFilter = hueRotation(hue);
     }
     add(_visual);
-    // Keep the hitbox on the body so near-misses feel fair.
     add(CircleHitbox(
       radius: size.x * 0.34,
       position: Vector2(size.x * 0.5, size.y * 0.42),
@@ -67,19 +72,21 @@ class Bird extends PositionComponent
     position = spawnPoint;
     velocityY = 0;
     holdingPoop = false;
+    diving = false;
     _sinceFlap = GameConfig.flapCooldown;
     _sincePoop = double.infinity;
+    if (isLoaded) _visual.angle = 0;
   }
 
   /// Hop toward the food band. Cruise altitude is maintained without spam.
   void flap() {
+    if (diving) return;
     if (_sinceFlap < GameConfig.flapCooldown) return;
     velocityY = GameConfig.flapVelocity;
     _sinceFlap = 0;
   }
 
-  /// Drops a poop if the cooldown and belly allow it. Returns the poop, or
-  /// null.
+  /// Drops a poop if the cooldown and belly allow it.
   Poop? poop() {
     if (_sincePoop < game.belly.cooldown) return null;
     final kind = game.belly.take();
@@ -89,18 +96,26 @@ class Bird extends PositionComponent
     }
     _sincePoop = 0;
     game.stats.onPoopDropped();
+    final dive = isDiveBombing;
+    final drop = dive
+        ? GameConfig.poopMaxDropSpeed
+        : velocityY.clamp(
+            GameConfig.poopMinDropSpeed,
+            GameConfig.poopMaxDropSpeed,
+          );
     final poop = Poop(
       position: position + Vector2(0, size.y * 0.3),
       kind: kind,
-      // A diving bird throws its poop harder.
-      velocityY: velocityY.clamp(
-        GameConfig.poopMinDropSpeed,
-        GameConfig.poopMaxDropSpeed,
-      ),
+      velocityY: drop,
+      diveBomb: dive,
     );
     game.world.add(poop);
-    game.feedback.audio.sfx('poop.wav', volume: 0.7);
-    game.feedback.hapticLight();
+    game.feedback.audio.sfx('poop.wav', volume: dive ? 0.9 : 0.7);
+    if (dive) {
+      game.feedback.hapticMedium();
+    } else {
+      game.feedback.hapticLight();
+    }
     return poop;
   }
 
@@ -112,25 +127,31 @@ class Bird extends PositionComponent
 
     velocityY += GameConfig.gravity * dt;
 
-    // Settle toward a gently bobbing cruise — stable, but aim isn't frozen.
     final bob = sin(game.elapsed * GameConfig.cruiseBobHz * pi * 2) *
         GameConfig.cruiseBobAmplitude;
     final cruise = game.cruiseY + bob;
-    final settling = _sinceFlap >= GameConfig.flapHangTime;
-    if (settling) {
-      final delta = cruise - position.y;
-      velocityY += delta.sign *
-          min(delta.abs() * 4, GameConfig.cruiseSettle) *
-          dt;
-      // Dampen so it doesn't oscillate around cruise.
-      velocityY *= pow(0.15, dt).toDouble();
+
+    if (diving) {
+      // Pull hard toward the road — risk cars + attackers for power.
+      velocityY += GameConfig.diveAccel * dt;
+      velocityY = min(velocityY, GameConfig.diveMaxSpeed);
+      _visual.angle = 0.35; // nose down
+    } else {
+      _visual.angle = 0;
+      final settling = _sinceFlap >= GameConfig.flapHangTime;
+      if (settling) {
+        final delta = cruise - position.y;
+        velocityY += delta.sign *
+            min(delta.abs() * 4, GameConfig.cruiseSettle) *
+            dt;
+        velocityY *= pow(0.15, dt).toDouble();
+      }
     }
 
     position.y += velocityY * dt;
 
-    // Hard ceiling = top of food band; floor = near road / screen bottom.
     final top = game.foodBandTop;
-    final bottom = min(game.size.y - size.y / 2, game.roadTop - size.y * 0.2);
+    final bottom = min(game.size.y - size.y / 2, game.roadTop - size.y * 0.15);
     if (position.y < top) {
       position.y = top;
       velocityY = max(velocityY, 0);

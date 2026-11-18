@@ -14,7 +14,7 @@ abstract class ParallaxStrip extends Component
 
   /// 0 = fixed to the sky, 1 = moves with the road.
   final double factor;
-  final double loopWidth;
+  double loopWidth;
 
   double scroll = 0;
 
@@ -53,6 +53,7 @@ class CloudLayer extends ParallaxStrip {
 }
 
 /// Skyline plate standing on the road's far edge.
+/// Sized with the sprite's native aspect so buildings stay upright.
 class SkylineLayer extends ParallaxStrip {
   SkylineLayer({
     required super.factor,
@@ -76,11 +77,14 @@ class SkylineLayer extends ParallaxStrip {
     if (sprite == null) return;
     final ground = game.roadTop;
     final height = ground * heightFraction;
-    // Overlap the curb slightly so apartments don't float above the street.
+    // Keep building proportions — don't squash into a fixed width.
+    final aspect = sprite.srcSize.x / sprite.srcSize.y;
+    final width = height * aspect;
+    loopWidth = width;
     sprite.render(
       canvas,
-      position: Vector2(0, ground - height + 8),
-      size: Vector2(loopWidth, height),
+      position: Vector2(0, ground - height + 6),
+      size: Vector2(width, height),
     );
   }
 }

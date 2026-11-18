@@ -112,12 +112,12 @@ def export_cars():
     for kind, color in CAR_COLORS.items():
         _render_subject(
             f"car_{kind}.png",
-            # Bodies with arched wells only — spinning tire.png overlays in-game.
-            lambda k=kind, c=color: build_car(k, body_color=c, with_wheels=False),
-            axis="CAR",
+            lambda k=kind, c=color: build_car(k, body_color=c, with_wheels=True),
+            # True side view so wheels stay circular (CAR 3/4 squashed them).
+            axis="Y",
             resolution=(896, 480),
-            outline=6,
-            padding=1.22,
+            outline=5,
+            padding=1.18,
         )
     shutil.copyfile(IMAGES_DIR / "car_sedan.png", IMAGES_DIR / "car-body.png")
 

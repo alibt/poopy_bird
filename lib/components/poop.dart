@@ -15,6 +15,7 @@ class Poop extends PositionComponent
     required Vector2 position,
     this.kind = PoopKind.normal,
     this.velocityY = GameConfig.poopMinDropSpeed,
+    this.diveBomb = false,
   }) : super(
           position: position,
           size: Vector2.all(_radiusFor(kind) * 2),
@@ -30,6 +31,9 @@ class Poop extends PositionComponent
 
   final PoopKind kind;
   double velocityY;
+
+  /// Dropped during a dive-bomb — wider splash + score bonus.
+  final bool diveBomb;
 
   double get radius => size.x / 2;
 

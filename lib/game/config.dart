@@ -20,6 +20,19 @@ abstract final class GameConfig {
   static const double cruiseBobAmplitude = 10;
   static const double cruiseBobHz = 0.55;
 
+  // Dive-bomb — hold lower control side / ArrowDown to dive under cruise.
+  static const double diveAccel = 900;
+  static const double diveMaxSpeed = 420;
+
+  /// How far below cruise counts as an active dive-bomb.
+  static const double diveEngagePadding = 18;
+
+  /// Wider multi-splat when dive-bombing (even for normal poops).
+  static const double diveSplatReach = 130;
+
+  /// Score multiplier on hits landed while dive-bombing.
+  static const double diveScoreBonus = 1.5;
+
   // Poop
   static const double poopCooldown = 0.5;
   static const double rapidFireCooldown = 0.12;

@@ -41,8 +41,6 @@ class Car extends PositionComponent
   bool get isSplatted => hitsTaken >= type.hitPoints;
 
   final List<SplatMark> _marks = [];
-  final List<SpriteComponent> _tires = [];
-  double _tireDiameter = 24;
 
   /// Centre of the roof, where splats land.
   Vector2 get roofCenter =>
@@ -58,31 +56,11 @@ class Car extends PositionComponent
     add(RectangleHitbox(collisionType: CollisionType.passive, isSolid: true));
   }
 
-  /// Body sprite (arches cut out) + spinning tires with visible spokes.
+  /// Single Blender plate with baked wheels — no tire overlays.
   Future<void> buildVisuals() async {
     final bodySprite = await game.loadSprite(type.bodyAsset!);
-    final visuals = PositionComponent(size: size);
-
-    if (type.wheelsInSprite) {
-      // Bosses keep baked wheels — too many axles to fake cleanly.
-      visuals.add(SpriteComponent(sprite: bodySprite, size: size.clone()));
-    } else {
-      visuals.add(SpriteComponent(sprite: bodySprite, size: size.clone()));
-      final tireSprite = await game.loadSprite('tire.png');
-      _tireDiameter = size.y * 0.36;
-      // Sit tires in the wheel arches (body faces left).
-      for (final x in const [0.22, 0.78]) {
-        final tire = SpriteComponent(
-          sprite: tireSprite,
-          size: Vector2.all(_tireDiameter),
-          position: Vector2(size.x * x, size.y - _tireDiameter * 0.42),
-          anchor: Anchor.center,
-        );
-        _tires.add(tire);
-        visuals.add(tire);
-      }
-    }
-    add(visuals);
+    // Faces left (travel direction). Wheels are baked into the sprite.
+    add(SpriteComponent(sprite: bodySprite, size: size.clone()));
   }
 
   /// Where the splat for the [hit]th hit goes, relative to the car.
@@ -126,15 +104,6 @@ class Car extends PositionComponent
     super.update(dt);
     if (isRemoving) return;
     position.x -= speed * dt;
-
-    // Moving left → clockwise roll on screen (Flame angle increases clockwise).
-    if (_tires.isNotEmpty && _tireDiameter > 0) {
-      final roll = speed * dt / (_tireDiameter / 2);
-      for (final tire in _tires) {
-        tire.angle += roll;
-      }
-    }
-
     if (position.x + size.x < 0) onLeftScreen();
   }
 

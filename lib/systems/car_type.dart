@@ -148,15 +148,8 @@ enum CarType {
   /// Splat fills rage instead of draining it.
   final bool raisesRageOnHit;
 
-  /// Only dedicated boss plates bake wheels. Shared plates (bus/limo bosses)
-  /// use the same spinning overlays as traffic.
-  bool get wheelsInSprite => switch (this) {
-        CarType.carWashTruck ||
-        CarType.mayorLimo ||
-        CarType.monsterTruck =>
-          true,
-        _ => false,
-      };
+  /// All current Blender plates bake wheels into the body sprite.
+  bool get wheelsInSprite => true;
 
   static CarType parse(String name) {
     for (final type in values) {

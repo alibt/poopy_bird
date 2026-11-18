@@ -25,22 +25,43 @@ from common import (
 
 
 def _wheel(name: str, loc: tuple[float, float, float], radius: float = 0.22):
-    rubber = toon_material(f"{name}_rubber", (0.07, 0.07, 0.08, 1.0), steps=2)
-    hub = toon_material(f"{name}_hub", (0.78, 0.78, 0.82, 1.0), steps=2)
-    rim = toon_material(f"{name}_rim", (0.35, 0.35, 0.38, 1.0), steps=2)
-    tire = mesh_cylinder(
-        name, radius=radius, depth=0.16, location=loc, material=rubber,
-        vertices=20, rotation=(math.radians(90), 0, 0),
-    )
-    ring = mesh_cylinder(
-        f"{name}_rim", radius=radius * 0.62, depth=0.17, location=loc,
-        material=rim, vertices=16, rotation=(math.radians(90), 0, 0),
-    )
-    cap = mesh_cylinder(
-        f"{name}_hub", radius=radius * 0.32, depth=0.18, location=loc,
-        material=hub, vertices=12, rotation=(math.radians(90), 0, 0),
-    )
-    return [tire, ring, cap]
+    """Side-view wheel for +Y camera: circular face with a clean hub + spokes."""
+    x, y, z = loc
+    rubber = toon_material(f"{name}_rubber", (0.09, 0.09, 0.1, 1.0), steps=2)
+    hub = toon_material(f"{name}_hub", (0.88, 0.88, 0.9, 1.0), steps=2)
+    rim = toon_material(f"{name}_rim", (0.42, 0.42, 0.46, 1.0), steps=2)
+    spoke = toon_material(f"{name}_spoke", (0.95, 0.84, 0.2, 1.0), steps=2)
+    # Axis along Y so a +Y side camera sees a circle.
+    rot = (math.radians(90), 0, 0)
+    parts = [
+        mesh_cylinder(
+            name, radius=radius, depth=0.2, location=loc, material=rubber,
+            vertices=32, rotation=rot,
+        ),
+        mesh_cylinder(
+            f"{name}_rim", radius=radius * 0.7, depth=0.22, location=loc,
+            material=rim, vertices=24, rotation=rot,
+        ),
+        mesh_cylinder(
+            f"{name}_hub", radius=radius * 0.28, depth=0.24, location=loc,
+            material=hub, vertices=16, rotation=rot,
+        ),
+    ]
+    # Three clean spokes — readable, not flecky.
+    for i in range(3):
+        a = i * (math.pi * 2 / 3)
+        sx = x + math.cos(a) * radius * 0.38
+        sz = z + math.sin(a) * radius * 0.38
+        sp = mesh_cube(
+            f"{name}_sp{i}",
+            (radius * 0.55, 0.04, radius * 0.1),
+            (sx, y + 0.05, sz),
+            spoke,
+        )
+        sp.rotation_euler = Euler((0, 0, a))
+        apply_loc_rot_scale(sp)
+        parts.append(sp)
+    return parts
 
 
 def _headlight(name: str, loc: tuple[float, float, float], lit: bool = True):
@@ -62,75 +83,51 @@ def _taillight(name: str, loc: tuple[float, float, float]):
 # ─── cars ────────────────────────────────────────────────────────────────────
 
 
-def _arch(
-    x0: float, x1: float, bottom: float = 0.05, top: float = 0.48
-) -> list[tuple[float, float]]:
-    """Wheel-arch notch along the bottom edge (x0 rear → x1 front)."""
-    mid = (x0 + x1) * 0.5
-    return [
-        (x0, bottom),
-        (x0 + (mid - x0) * 0.35, top),
-        (mid, top),
-        (x1 - (x1 - mid) * 0.35, top),
-        (x1, bottom),
-    ]
-
-
 def _sedan_profile(length: float = 2.6, roof: float = 1.15) -> list[tuple[float, float]]:
     """Clockwise XZ silhouette of a cartoon sedan (nose at +X)."""
     L = length * 0.5
     return [
-        (L * 0.98, 0.18),          # front bumper bottom
-        (L * 1.02, 0.38),          # grille
-        (L * 0.85, 0.58),          # hood front
-        (L * 0.35, 0.68),          # hood / windshield base
-        (L * 0.05, roof),          # roof front
-        (-L * 0.35, roof),         # roof rear
-        (-L * 0.55, 0.72),         # rear window
-        (-L * 0.85, 0.62),         # trunk
-        (-L * 1.0, 0.4),           # rear bumper top
-        (-L * 0.98, 0.18),         # rear bumper bottom
-        *_arch(-L * 0.55, -L * 0.18),  # rear wheel
-        *_arch(L * 0.15, L * 0.52),    # front wheel
-        (L * 0.55, 0.18),
+        (L * 0.98, 0.22),
+        (L * 1.02, 0.38),
+        (L * 0.85, 0.58),
+        (L * 0.35, 0.68),
+        (L * 0.05, roof),
+        (-L * 0.35, roof),
+        (-L * 0.55, 0.72),
+        (-L * 0.85, 0.62),
+        (-L * 1.0, 0.4),
+        (-L * 0.98, 0.22),
+        (-L * 0.55, 0.22),
+        (L * 0.55, 0.22),
     ]
 
 
 def _sports_profile(length: float = 2.7) -> list[tuple[float, float]]:
     L = length * 0.5
     return [
-        (L * 1.0, 0.15), (L * 1.05, 0.32), (L * 0.7, 0.42),
+        (L * 1.0, 0.2), (L * 1.05, 0.32), (L * 0.7, 0.42),
         (L * 0.15, 0.48), (-L * 0.05, 0.78), (-L * 0.45, 0.78),
-        (-L * 0.7, 0.5), (-L * 1.0, 0.38), (-L * 0.98, 0.15),
-        *_arch(-L * 0.55, -L * 0.2, bottom=0.05, top=0.42),
-        *_arch(L * 0.12, L * 0.5, bottom=0.05, top=0.42),
-        (L * 0.5, 0.15),
+        (-L * 0.7, 0.5), (-L * 1.0, 0.38), (-L * 0.98, 0.2),
+        (L * 0.5, 0.2),
     ]
 
 
 def _bus_profile(length: float = 3.4) -> list[tuple[float, float]]:
     L = length * 0.5
     return [
-        (L * 0.95, 0.2), (L * 1.0, 0.55), (L * 0.9, 1.55),
-        (-L * 0.9, 1.55), (-L * 1.0, 0.55), (-L * 0.95, 0.2),
-        *_arch(-L * 0.55, -L * 0.15, bottom=0.08, top=0.5),
-        *_arch(-0.2, 0.25, bottom=0.08, top=0.5),
-        *_arch(L * 0.2, L * 0.55, bottom=0.08, top=0.5),
-        (L * 0.5, 0.2),
+        (L * 0.95, 0.22), (L * 1.0, 0.55), (L * 0.9, 1.55),
+        (-L * 0.9, 1.55), (-L * 1.0, 0.55), (-L * 0.95, 0.22),
+        (L * 0.5, 0.22),
     ]
 
 
 def _limo_profile(length: float = 4.0) -> list[tuple[float, float]]:
     L = length * 0.5
     return [
-        (L * 0.98, 0.18), (L * 1.02, 0.38), (L * 0.8, 0.55),
+        (L * 0.98, 0.22), (L * 1.02, 0.38), (L * 0.8, 0.55),
         (L * 0.55, 0.62), (L * 0.35, 1.05), (-L * 0.55, 1.05),
-        (-L * 0.75, 0.62), (-L * 0.98, 0.4), (-L * 0.96, 0.18),
-        *_arch(-L * 0.55, -L * 0.25),
-        *_arch(-0.45, -0.05),
-        *_arch(0.2, 0.55),
-        *_arch(L * 0.2, L * 0.52),
-        (L * 0.5, 0.18),
+        (-L * 0.75, 0.62), (-L * 0.98, 0.4), (-L * 0.96, 0.22),
+        (L * 0.5, 0.22),
     ]
 
 
@@ -160,13 +157,10 @@ def build_car(
         # Low roof — windscreen only.
         L = 1.3
         profile = [
-            (L * 0.98, 0.18), (L * 1.02, 0.38), (L * 0.75, 0.55),
+            (L * 0.98, 0.22), (L * 1.02, 0.38), (L * 0.75, 0.55),
             (L * 0.2, 0.62), (L * 0.05, 0.85), (-L * 0.15, 0.7),
             (-L * 0.5, 0.58), (-L * 0.95, 0.55), (-L * 1.0, 0.35),
-            (-L * 0.98, 0.18),
-            *_arch(-L * 0.55, -L * 0.18),
-            *_arch(L * 0.15, L * 0.52),
-            (L * 0.5, 0.18),
+            (-L * 0.98, 0.22), (L * 0.5, 0.22),
         ]
         length = 2.6
     else:
@@ -311,12 +305,11 @@ def build_car(
             xs = (-length * 0.38, -0.25, 0.4, length * 0.35)
         elif kind == "bus":
             xs = (-length * 0.35, 0.0, length * 0.32)
-        # Wheels sit inside the arched body silhouette.
+        # Only the camera-facing side (+Y). Far-side wheels read as a second
+        # ghost tire under each hub in orthographic side view.
         for x in xs:
-            for y in (-0.52, 0.52):
-                parts.extend(
-                    _wheel(f"{kind}_w_{x:.2f}_{y:.1f}", (x, y, 0.24), 0.24)
-                )
+            # Center slightly into the belly so tires nest under the chassis.
+            parts.extend(_wheel(f"{kind}_w_{x:.2f}", (x, 0.58, 0.28), 0.24))
 
     return join_objects(parts, f"car_{kind}")
 
@@ -858,8 +851,7 @@ def build_skyline_tile(*, seed: int, near: bool, length: float = 12.0):
             f"b_{seed}_{len(objs)}", (w, depth, h),
             (cx, 0, base_z + h * 0.5), body_mat,
         )
-        # Tiny bevel only — sharp apartments, not melted clay.
-        bevel(b, width=0.02, segments=1)
+        # No bevel — bevel made apartments look melted/deformed.
         objs.append(b)
 
         if near:
