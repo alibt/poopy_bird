@@ -38,6 +38,10 @@ abstract interface class ProgressRepository {
   /// Grants coins from outside a run, e.g. a rewarded ad or a purchase.
   /// [reason] is recorded so a backend can verify the grant.
   Future<PlayerProgress> grantCoins(int amount, {required String reason});
+
+  /// Marks achievements as unlocked and pays their rewards. Ids that are
+  /// unknown or already unlocked are ignored.
+  Future<PlayerProgress> unlockAchievements(List<String> ids);
 }
 
 /// Keeps progress in a [KeyValueStore] as JSON, and logs every action to an
@@ -158,6 +162,18 @@ class LocalProgressRepository implements ProgressRepository {
           (p) => p.withCoins(amount),
         ));
   }
+
+  @override
+  Future<PlayerProgress> unlockAchievements(List<String> ids) =>
+      _locked(() async {
+        final current = await _load();
+        if (ids.every(current.hasAchievement)) return current;
+        return _apply(
+          'unlockAchievements',
+          {'ids': ids},
+          (p) => p.unlockAchievements(ids, _clock()),
+        );
+      });
 }
 
 /// A [LocalProgressRepository] that forgets everything when the app closes.

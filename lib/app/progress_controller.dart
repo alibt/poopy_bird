@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../achievements/achievements.dart';
 import '../economy/catalog.dart';
 import '../economy/rewards.dart';
 import '../levels/level_definition.dart';
@@ -28,6 +29,17 @@ class ProgressController extends ChangeNotifier {
   /// Debug-only switch that opens every level.
   bool unlockAll = false;
 
+  /// Achievements unlocked but not yet announced, oldest first. The app's
+  /// toast host shows and removes them.
+  final ValueNotifier<List<AchievementDefinition>> unlockQueue =
+      ValueNotifier(const []);
+
+  /// Removes the first queued achievement once its toast has been shown.
+  void dismissUnlock() {
+    final queue = unlockQueue.value;
+    if (queue.isNotEmpty) unlockQueue.value = queue.sublist(1);
+  }
+
   UnlockRules get rules => UnlockRules(worlds, progress, unlockAll: unlockAll);
 
   Future<void> load() async {
@@ -40,6 +52,7 @@ class ProgressController extends ChangeNotifier {
   Future<RunReward> record(LevelResult result) async {
     final recorded = await progressRepository.record(result);
     progress = recorded.progress;
+    await _checkAchievements(run: result);
     notifyListeners();
     return recorded.reward;
   }
@@ -75,7 +88,30 @@ class ProgressController extends ChangeNotifier {
 
   Future<void> _update(Future<PlayerProgress> change) async {
     progress = await change;
+    await _checkAchievements();
     notifyListeners();
+  }
+
+  /// Unlocks whatever the latest change earned. Repeats because an
+  /// achievement's coins can earn another (e.g. "Earn 5,000 coins").
+  Future<void> _checkAchievements({LevelResult? run}) async {
+    for (var pass = 0; pass < 3; pass++) {
+      final earned = Achievements.newlyEarned(AchievementContext(
+        progress: progress,
+        worlds: worlds,
+        run: pass == 0 ? run : null,
+      ));
+      if (earned.isEmpty) return;
+      progress = await progressRepository
+          .unlockAchievements([for (final a in earned) a.id]);
+      unlockQueue.value = [...unlockQueue.value, ...earned];
+    }
+  }
+
+  @override
+  void dispose() {
+    unlockQueue.dispose();
+    super.dispose();
   }
 
   void toggleUnlockAll() {

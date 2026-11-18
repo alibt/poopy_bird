@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../ui/achievement_toast.dart';
 import '../ui/screens/main_menu_screen.dart';
 import '../ui/widgets.dart';
 import 'app_scope.dart';
@@ -25,6 +26,10 @@ class _PoopyBirdAppState extends State<PoopyBirdApp> {
         title: 'Poopy Bird',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
+        builder: (context, child) => AchievementToastHost(
+          controller: widget.controller,
+          child: child!,
+        ),
         home: FutureBuilder<void>(
           future: _loading,
           builder: (context, snapshot) {

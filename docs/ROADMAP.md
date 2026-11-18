@@ -175,9 +175,9 @@ Check the licence of the current placeholder art before any release; it will all
 - [x] Android toolchain updated to Flutter 3.47's minimums (Gradle 8.14.3, AGP 8.11.1, Kotlin 2.2.20)
 
 ### M4 — Achievements, trophies, Endless
-- [ ] Achievement system + notifications
-- [ ] Trophy Room screen
-- [ ] Endless mode + leaderboard-ready scoring
+- [x] Achievement system + notifications: definitions, lifetime stats, unlock checks after runs/purchases, toast host
+- [x] Achievements screen + Trophy Room (cups + personal Endless top-10)
+- [x] Endless leaderboard-ready scoring: run ids, rules version, distance/stats on `LevelResult`, personal top-10, recurring Car Wash Truck visits
 
 ### M5 — Art and content
 - [ ] Blender pipeline scripts in `tools/blender/`

@@ -11,7 +11,7 @@ import 'effects.dart';
 /// World 1 boss. A big, slow truck that takes [CarType.hitPoints] poops.
 /// Every few seconds it sprays water that washes nearby cars clean, so they
 /// count as escapes again. If it drives off-screen undefeated it loops back
-/// around. Placeholder art until M5.
+/// around (in Endless, only once more). Placeholder art until M5.
 class CarWashTruck extends Car {
   CarWashTruck({
     required super.lane,
@@ -117,10 +117,19 @@ class CarWashTruck extends Car {
     );
   }
 
+  /// In Endless the truck gives up after this many passes, so visits can't
+  /// pile up. In a boss level it keeps coming until defeated.
+  static const int endlessMaxPasses = 2;
+
+  int _passes = 0;
+
   @override
   void onLeftScreen() {
+    _passes++;
     if (isSplatted) {
       removeFromParent();
+    } else if (game.plan.level == null && _passes >= endlessMaxPasses) {
+      super.onLeftScreen();
     } else {
       // Undefeated: come around again.
       position.x = game.size.x + _reentryGap;

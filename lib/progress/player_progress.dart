@@ -1,9 +1,11 @@
 import 'dart:math';
 
+import '../achievements/achievements.dart';
 import '../economy/catalog.dart';
 import '../economy/rewards.dart';
 import '../levels/level_definition.dart';
 import 'level_result.dart';
+import 'lifetime_stats.dart';
 
 /// Best result so far on one level.
 class LevelRecord {
@@ -62,10 +64,17 @@ class PlayerProgress {
     this.upgrades = const {},
     this.owned = const {},
     this.equipped = const {},
+    this.stats = const LifetimeStats(),
+    this.achievements = const {},
+    this.endlessTop = const [],
   });
 
   /// 1: levels and endless best. 2: adds coins, upgrades and cosmetics.
-  static const int schemaVersion = 2;
+  /// 3: adds lifetime stats, achievements and the Endless top list.
+  static const int schemaVersion = 3;
+
+  /// How many Endless runs the personal top list keeps.
+  static const int endlessTopSize = 10;
 
   final Map<String, LevelRecord> levels;
   final int endlessBest;
@@ -82,6 +91,22 @@ class PlayerProgress {
 
   /// Cosmetic slot name to equipped cosmetic id.
   final Map<String, String> equipped;
+
+  final LifetimeStats stats;
+
+  /// Unlocked achievement ids and when they were unlocked.
+  final Map<String, DateTime> achievements;
+
+  /// Best Endless runs, highest score first.
+  final List<EndlessRun> endlessTop;
+
+  bool hasAchievement(String id) => achievements.containsKey(id);
+
+  /// 1-based place of the run with [runId] in [endlessTop], or null.
+  int? endlessRankOf(String runId) {
+    final index = endlessTop.indexWhere((r) => r.runId == runId);
+    return index < 0 ? null : index + 1;
+  }
 
   LevelRecord recordFor(String levelId) =>
       levels[levelId] ?? const LevelRecord();
@@ -126,6 +151,9 @@ class PlayerProgress {
     Map<String, int>? upgrades,
     Set<String>? owned,
     Map<String, String>? equipped,
+    LifetimeStats? stats,
+    Map<String, DateTime>? achievements,
+    List<EndlessRun>? endlessTop,
   }) =>
       PlayerProgress(
         levels: levels ?? this.levels,
@@ -135,18 +163,41 @@ class PlayerProgress {
         upgrades: upgrades ?? this.upgrades,
         owned: owned ?? this.owned,
         equipped: equipped ?? this.equipped,
+        stats: stats ?? this.stats,
+        achievements: achievements ?? this.achievements,
+        endlessTop: endlessTop ?? this.endlessTop,
       );
 
   /// Records a finished run and pays its [RewardRules] reward.
   PlayerProgress withResult(LevelResult result) {
     final reward = RewardRules.forResult(result, this);
-    final paid = withCoins(reward.total);
+    final paid = withCoins(reward.total)._copy(stats: stats.add(result));
     if (result.isEndless) {
-      return paid._copy(endlessBest: max(endlessBest, result.score));
+      final top = [...endlessTop, EndlessRun.from(result)]
+        ..sort((a, b) => b.score.compareTo(a.score));
+      return paid._copy(
+        endlessBest: max(endlessBest, result.score),
+        endlessTop: top.take(endlessTopSize).toList(),
+      );
     }
     return paid._copy(levels: {
       ...levels,
       result.levelId: recordFor(result.levelId).merge(result),
+    });
+  }
+
+  /// Marks achievements as unlocked and pays their coin rewards. Unknown or
+  /// already unlocked ids are ignored.
+  PlayerProgress unlockAchievements(Iterable<String> ids, DateTime at) {
+    final fresh = ids
+        .where((id) => !hasAchievement(id) && Achievements.byId(id) != null)
+        .toSet();
+    if (fresh.isEmpty) return this;
+    final coins =
+        fresh.fold(0, (sum, id) => sum + Achievements.byId(id)!.coins);
+    return withCoins(coins)._copy(achievements: {
+      ...achievements,
+      for (final id in fresh) id: at.toUtc(),
     });
   }
 
@@ -196,8 +247,8 @@ class PlayerProgress {
       throw FormatException(
           'Progress schema $version is newer than $schemaVersion');
     }
-    // Version 1 data simply lacks the economy fields; their defaults are
-    // the correct migration.
+    // Older versions simply lack the newer fields; their defaults are the
+    // correct migration.
     return PlayerProgress(
       levels: {
         for (final e in (json['levels'] as Map<String, dynamic>? ?? {}).entries)
@@ -220,6 +271,17 @@ class PlayerProgress {
             in (json['equipped'] as Map<String, dynamic>? ?? {}).entries)
           e.key: e.value as String,
       },
+      stats: LifetimeStats.fromJson(
+          json['stats'] as Map<String, dynamic>? ?? const {}),
+      achievements: {
+        for (final e
+            in (json['achievements'] as Map<String, dynamic>? ?? {}).entries)
+          e.key: DateTime.parse(e.value as String),
+      },
+      endlessTop: [
+        for (final run in json['endlessTop'] as List<dynamic>? ?? const [])
+          EndlessRun.fromJson(run as Map<String, dynamic>),
+      ],
     );
   }
 
@@ -232,6 +294,12 @@ class PlayerProgress {
         'upgrades': upgrades,
         'owned': owned.toList()..sort(),
         'equipped': equipped,
+        'stats': stats.toJson(),
+        'achievements': {
+          for (final e in achievements.entries)
+            e.key: e.value.toUtc().toIso8601String(),
+        },
+        'endlessTop': [for (final run in endlessTop) run.toJson()],
       };
 }
 

@@ -66,6 +66,7 @@ class Bird extends SpriteAnimationComponent
       return null;
     }
     _sincePoop = 0;
+    game.stats.onPoopDropped();
     final poop = Poop(
       position: position + Vector2(0, size.y * 0.3),
       kind: kind,

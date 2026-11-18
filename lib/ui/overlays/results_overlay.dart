@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/app_scope.dart';
 import '../../economy/rewards.dart';
-
 import '../../game/poopy_bird_game.dart';
 import '../../progress/level_result.dart';
 import '../widgets.dart';
@@ -79,6 +79,7 @@ class ResultsOverlay extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+          if (result.isEndless) _EndlessRank(runId: result.runId),
           const SizedBox(height: 4),
           Text(
               'Cars splatted: ${result.carsSplatted}   Best combo: x${result.bestCombo}'),
@@ -135,6 +136,29 @@ class ResultsOverlay extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Personal Endless board place, once the run has been stored.
+class _EndlessRank extends StatelessWidget {
+  const _EndlessRank({required this.runId});
+
+  final String runId;
+
+  @override
+  Widget build(BuildContext context) {
+    final rank = AppScope.of(context).progress.endlessRankOf(runId);
+    if (rank == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        'Personal board: #$rank',
+        style: TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Colors.green.shade700,
+        ),
       ),
     );
   }

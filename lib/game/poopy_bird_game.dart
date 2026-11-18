@@ -24,6 +24,7 @@ import '../systems/belly.dart';
 import '../systems/combo_tracker.dart';
 import '../systems/objective_tracker.dart';
 import '../systems/rage_meter.dart';
+import '../systems/run_stats.dart';
 import '../systems/score_tracker.dart';
 import 'config.dart';
 
@@ -69,6 +70,7 @@ class PoopyBirdGame extends FlameGame
     burritoBigPoops: loadout.burritoBigPoops,
   );
   late ObjectiveTracker objectives = ObjectiveTracker(plan.objectives);
+  final RunStats stats = RunStats();
 
   late final Bird bird;
   late final CarSpawner carSpawner;
@@ -213,6 +215,15 @@ class PoopyBirdGame extends FlameGame
       durationSeconds: elapsed,
       finishedAt: DateTime.now().toUtc(),
       isBoss: level?.isBoss ?? false,
+      runId: LevelResult.newRunId(),
+      distance: score.distanceMetres,
+      poopsDropped: stats.poopsDropped,
+      poopsMissed: stats.poopsMissed,
+      foodEaten: stats.foodEaten,
+      bossesDefeated: stats.bossesDefeated,
+      maxRage: stats.maxRage,
+      bestMultiSplat: stats.bestMultiSplat,
+      splatsByType: Map.of(stats.splatsByType),
     );
     pauseEngine();
     overlays.remove(GameOverlays.pauseButton);
@@ -227,6 +238,7 @@ class PoopyBirdGame extends FlameGame
     rage.reset();
     combo.reset();
     belly.reset();
+    stats.reset();
     objectives = ObjectiveTracker(plan.objectives);
     elapsed = 0;
     outcome = null;
@@ -268,9 +280,14 @@ class PoopyBirdGame extends FlameGame
         ? world.children.whereType<Car>().where((c) =>
             (c.centerX - poop.position.x).abs() <= GameConfig.bigSplatReach)
         : [car];
+    var splatted = 0;
     for (final target in targets.toList()) {
-      if (target.splat()) _scoreHit(target);
+      if (target.splat()) {
+        _scoreHit(target);
+        if (target.isSplatted) splatted++;
+      }
     }
+    stats.onPoopLanded(splatted);
     world.add(splatBurst(
       poop.position.clone(),
       random,
@@ -294,6 +311,7 @@ class PoopyBirdGame extends FlameGame
     ));
     if (car.isSplatted) {
       score.registerCarSplatted();
+      stats.onCarSplatted(car.type);
       objectives.onSplat(car.type);
       if (car.type.isBoss) _onBossDefeated(car);
     }
@@ -316,6 +334,7 @@ class PoopyBirdGame extends FlameGame
   void onPoopMissed(Poop poop) {
     if (isFinished) return;
     combo.registerMiss();
+    stats.onPoopMissed();
     world.add(RoadSplat(
       position: poop.position.clone(),
       radius: poop.radius,
@@ -329,12 +348,14 @@ class PoopyBirdGame extends FlameGame
     if (isFinished) return;
     objectives.onEscape();
     rage.onCarEscaped();
+    stats.onRage(rage.value);
     if (rage.isFull) finish(RunOutcome.rageOut);
   }
 
   void onFoodEaten(FoodPickup food) {
     if (isFinished || food.isRemoving) return;
     belly.eat(food.type);
+    stats.onFoodEaten();
     food.removeFromParent();
     world.add(FloatingText(
       food.type.label,

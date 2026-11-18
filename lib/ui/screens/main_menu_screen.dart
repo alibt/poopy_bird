@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../widgets.dart';
+import 'achievements_screen.dart';
 import 'game_screen.dart';
 import 'shop_screen.dart';
+import 'trophy_room_screen.dart';
 import 'world_map_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
@@ -113,6 +115,35 @@ class MainMenuScreen extends StatelessWidget {
                         ),
                         icon: const Icon(Icons.storefront_rounded),
                         label: const Text('Shop'),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                            ),
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => const AchievementsScreen()),
+                            ),
+                            icon: const Icon(Icons.emoji_events_outlined),
+                            label: const Text('Achievements'),
+                          ),
+                          const SizedBox(width: 10),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                            ),
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => const TrophyRoomScreen()),
+                            ),
+                            icon: const Icon(Icons.military_tech_rounded),
+                            label: const Text('Trophies'),
+                          ),
+                        ],
                       ),
                     ],
                   ),

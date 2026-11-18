@@ -44,3 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/build/
+
+# Graphify knowledge-graph output (local tooling cache)
+/graphify-out/

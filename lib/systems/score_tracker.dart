@@ -25,6 +25,9 @@ class ScoreTracker {
 
   void addDistance(double pixels) => _distance += pixels;
 
+  /// Distance flown in metres (one metre per distance point).
+  int get distanceMetres => (_distance / pixelsPerDistancePoint).floor();
+
   /// Records a poop hit worth [basePoints] and returns the points earned.
   int registerHit({required int basePoints, int multiplier = 1}) {
     final points = basePoints * multiplier;

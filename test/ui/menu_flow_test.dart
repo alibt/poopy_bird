@@ -151,16 +151,18 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('buy_belly')));
     await _settle(tester);
     expect(controller.progress.upgradeTier(UpgradeId.belly), 1);
-    expect(controller.progress.coins, 250);
+    // 400 - 150 belly + 25 "Upgrade!" achievement reward.
+    expect(controller.progress.coins, 275);
+    expect(controller.progress.hasAchievement('first_upgrade'), isTrue);
     expect(find.text('7 poops → 8 poops'), findsOneWidget);
 
     // Too expensive now: refused with a message, nothing spent.
     await tester.tap(find.byKey(const ValueKey('buy_belly')));
     await _settle(tester);
     expect(find.text('Not enough coins yet!'), findsOneWidget);
-    expect(controller.progress.coins, 250);
+    expect(controller.progress.coins, 275);
 
-    // Let the message time out so it doesn't cover the cards.
+    // Let the message/toast finish so they don't cover the cards.
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
 
@@ -169,7 +171,27 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('buy_poop_slime')));
     await _settle(tester);
     expect(controller.progress.equippedIn(CosmeticSlot.poop), 'poop_slime');
-    expect(controller.progress.coins, 0);
+    // 275 - 250 slime + 25 "Fashion Bird" achievement reward.
+    expect(controller.progress.coins, 50);
+    expect(controller.progress.hasAchievement('fashion'), isTrue);
+  });
+
+  testWidgets('achievements and trophy room open from the main menu',
+      (tester) async {
+    await _useLandscape(tester);
+    await tester.pumpWidget(PoopyBirdApp(controller: _controller()));
+    await _settle(tester);
+
+    await tester.tap(find.text('Achievements'));
+    await tester.pumpAndSettle();
+    expect(find.text('First Splat'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Trophies'));
+    await tester.pumpAndSettle();
+    expect(find.text('Trophy Room'), findsOneWidget);
+    expect(find.text('Cups'), findsOneWidget);
   });
 
   testWidgets('finishing a level shows the coins it earned', (tester) async {

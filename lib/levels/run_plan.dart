@@ -100,8 +100,15 @@ class EndlessPlan implements RunPlan {
     );
   }
 
+  /// The Car Wash Truck visits every [bossInterval] seconds.
+  static const double bossInterval = 120;
+
   @override
-  List<ScriptedSpawn> get scriptedSpawns => const [];
+  late final List<ScriptedSpawn> scriptedSpawns = [
+    // Two hours of visits is more than any run lasts.
+    for (var t = bossInterval; t <= 7200; t += bossInterval)
+      ScriptedSpawn(at: t, car: CarType.carWashTruck, lane: 1, groundSpeed: 20),
+  ];
 
   @override
   FoodSettings get food => const FoodSettings(
