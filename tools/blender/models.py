@@ -202,8 +202,14 @@ def build_car(
             [(L * 0.78, 1.0), (L * 0.82, 1.42), (-L * 0.82, 1.42), (-L * 0.78, 1.0)],
             0.1,
         )
+        frame = extrude_profile(
+            f"{kind}_win_frame", _inset_poly(
+                [(L * 0.78, 1.0), (L * 0.82, 1.42), (-L * 0.82, 1.42), (-L * 0.78, 1.0)],
+                0.04,
+            ), width=1.18, material=dark,
+        )
         win = extrude_profile(f"{kind}_win", win_pts, width=glass_w, material=glass)
-        parts.append(win)
+        parts.extend([frame, win])
         stripe = mesh_cube(
             f"{kind}_stripe", (3.0, 1.16, 0.12), (0, 0, 0.7),
             toon_material(f"{kind}_stripe", (1.0, 0.86, 0.12, 1.0), steps=2),
@@ -246,9 +252,14 @@ def build_car(
                 (-L * 0.42, 0.80),
             ]
             win_pts = _inset_poly(cabin, 0.12)
+        # Dark reveal behind glass so the cabin reads as a framed placeholder.
+        frame_pts = _inset_poly(cabin, 0.04)
+        frame = extrude_profile(
+            f"{kind}_win_frame", frame_pts, width=1.18, material=dark
+        )
         win = extrude_profile(f"{kind}_win", win_pts, width=glass_w, material=glass)
         bevel(win, width=0.02, segments=2)
-        parts.append(win)
+        parts.extend([frame, win])
 
     # Bumpers + near-side lights only (far-side lights ghost in ortho +Y).
     parts.append(mesh_cube(f"{kind}_fb", (0.16, 1.05, 0.18), (length * 0.48, 0, 0.28), chrome))
