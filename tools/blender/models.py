@@ -856,21 +856,24 @@ def build_skyline_tile(*, seed: int, near: bool, length: float = 12.0):
         f"sky_{seed}_walk", (0.62, 0.64, 0.66, 1.0), steps=2
     )
 
-    # Continuous sidewalk that pins the strip to the street line.
+    # Continuous sidewalk past the strip ends so parallax tiles seam cleanly.
     objs = [
         mesh_cube(
-            f"walk_{seed}", (length + 0.4, depth + 0.35, 0.18),
+            f"walk_{seed}", (length + 1.2, depth + 0.35, 0.18),
             (0, 0.05, 0.09), walk_mat,
         ),
         mesh_cube(
-            f"curb_{seed}", (length + 0.4, 0.22, 0.28),
+            f"curb_{seed}", (length + 1.2, 0.22, 0.28),
             (0, depth * 0.55, 0.14), curb_mat,
         ),
     ]
 
-    x = -length * 0.5
-    while x < length * 0.5:
+    x = -length * 0.5 + 0.15
+    end_x = length * 0.5 - 0.15
+    while x < end_x:
         w = 0.85 + rng.random() * 1.15
+        if x + w > end_x:
+            w = max(0.7, end_x - x)
         h = h_range[0] + rng.random() * (h_range[1] - h_range[0])
         style = rng.choice(["block", "setback", "tower", "ledge"])
         cx = x + w * 0.5
