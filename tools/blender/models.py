@@ -62,6 +62,20 @@ def _wheel_arch(
     ]
 
 
+def _inset_poly(
+    pts: list[tuple[float, float]], amount: float = 0.1
+) -> list[tuple[float, float]]:
+    """Pull polygon vertices toward the centroid so glass sits inside a frame."""
+    cx = sum(p[0] for p in pts) / len(pts)
+    cz = sum(p[1] for p in pts) / len(pts)
+    out: list[tuple[float, float]] = []
+    for x, z in pts:
+        dx, dz = cx - x, cz - z
+        dist = math.hypot(dx, dz) or 1.0
+        out.append((x + dx / dist * amount, z + dz / dist * amount))
+    return out
+
+
 def _headlight(name: str, loc: tuple[float, float, float], lit: bool = True):
     color = (1.0, 0.95, 0.7, 1.0) if lit else (0.85, 0.55, 0.15, 1.0)
     return mesh_uv_sphere(
@@ -179,16 +193,19 @@ def build_car(
     bevel(body, width=0.05, segments=3)
     parts: list[bpy.types.Object] = [body]
 
-    # Window insert (inset silhouette on the cabin).
+    # Glass fills the cabin with a body frame. Derive from greenhouse corners,
+    # then inset (body bevel ~0.05 + outline need ~0.1 clear frame).
+    glass_w = 1.22
     if kind == "bus":
-        win = extrude_profile(
-            f"{kind}_win",
-            [(1.2, 0.85), (1.3, 1.4), (-1.3, 1.4), (-1.2, 0.85)],
-            width=1.18, material=glass,
+        L = length * 0.5
+        win_pts = _inset_poly(
+            [(L * 0.78, 1.0), (L * 0.82, 1.42), (-L * 0.82, 1.42), (-L * 0.78, 1.0)],
+            0.1,
         )
+        win = extrude_profile(f"{kind}_win", win_pts, width=glass_w, material=glass)
         parts.append(win)
         stripe = mesh_cube(
-            f"{kind}_stripe", (3.3, 1.2, 0.14), (0, 0, 0.7),
+            f"{kind}_stripe", (3.0, 1.16, 0.12), (0, 0, 0.7),
             toon_material(f"{kind}_stripe", (1.0, 0.86, 0.12, 1.0), steps=2),
         )
         parts.append(stripe)
@@ -198,93 +215,106 @@ def build_car(
             toon_material(f"{kind}_seat", (0.45, 0.12, 0.12, 1.0), steps=2),
         )
         bevel(seat, width=0.05, segments=3)
-        screen = mesh_cube(f"{kind}_screen", (0.06, 0.85, 0.4), (0.15, 0, 0.85), glass)
+        # Windscreen sits on the near face only — avoid a full-width fleck.
+        screen = mesh_cube(f"{kind}_screen", (0.04, 0.35, 0.26), (0.12, 0.55, 0.8), glass)
         parts.extend([seat, screen])
     else:
-        # Glass band following the greenhouse roughly.
+        L = length * 0.5
         if kind == "sports":
-            win_pts = [(0.2, 0.5), (-0.05, 0.72), (-0.4, 0.72), (-0.55, 0.52)]
+            cabin = [
+                (L * 0.10, 0.54),
+                (-L * 0.06, 0.74),
+                (-L * 0.40, 0.74),
+                (-L * 0.58, 0.56),
+            ]
+            win_pts = _inset_poly(cabin, 0.12)
         elif kind == "limo":
-            win_pts = [(1.2, 0.65), (0.9, 0.98), (-1.8, 0.98), (-2.2, 0.65)]
+            cabin = [
+                (L * 0.45, 0.74),
+                (L * 0.28, 1.0),
+                (-L * 0.48, 1.0),
+                (-L * 0.64, 0.74),
+            ]
+            win_pts = _inset_poly(cabin, 0.12)
         else:
-            win_pts = [(0.7, 0.7), (0.15, 1.08), (-0.7, 1.08), (-1.1, 0.72)]
-        win = extrude_profile(f"{kind}_win", win_pts, width=1.18, material=glass)
+            # Stay inside A/C pillars after body bevel + PNG outline.
+            roof = 1.2 if kind != "sunroof" else 1.22
+            cabin = [
+                (L * 0.28, 0.78),
+                (L * 0.0, roof - 0.08),
+                (-L * 0.28, roof - 0.08),
+                (-L * 0.42, 0.80),
+            ]
+            win_pts = _inset_poly(cabin, 0.12)
+        win = extrude_profile(f"{kind}_win", win_pts, width=glass_w, material=glass)
+        bevel(win, width=0.02, segments=2)
         parts.append(win)
 
-    # Bumpers + grille + lights.
-    parts.append(mesh_cube(f"{kind}_fb", (0.18, 1.2, 0.2), (length * 0.48, 0, 0.28), chrome))
-    parts.append(mesh_cube(f"{kind}_rb", (0.16, 1.2, 0.18), (-length * 0.48, 0, 0.28), chrome))
-    grille = mesh_cube(
-        f"{kind}_grille", (0.06, 0.7, 0.22), (length * 0.50, 0, 0.42), dark
-    )
-    parts.append(grille)
-    for i, gy in enumerate((-0.18, 0.0, 0.18)):
+    # Bumpers + near-side lights only (far-side lights ghost in ortho +Y).
+    parts.append(mesh_cube(f"{kind}_fb", (0.16, 1.05, 0.18), (length * 0.48, 0, 0.28), chrome))
+    parts.append(mesh_cube(f"{kind}_rb", (0.14, 1.05, 0.16), (-length * 0.48, 0, 0.28), chrome))
+    parts.append(mesh_cube(f"{kind}_grille", (0.05, 0.55, 0.18), (length * 0.50, 0, 0.42), dark))
+    parts.append(_headlight(f"{kind}_hl", (length * 0.47, 0.4, 0.45)))
+    parts.append(_taillight(f"{kind}_tl", (-length * 0.48, 0.4, 0.48)))
+
+    # Body-panel trim — keep below the beltline so it never cuts glass.
+    if kind != "sports":
         parts.append(
             mesh_cube(
-                f"{kind}_gbar{i}", (0.04, 0.08, 0.18),
-                (length * 0.505, gy, 0.42), chrome,
+                f"{kind}_cline", (length * 0.55, 1.12, 0.035), (0.0, 0, 0.46),
+                toon_material(
+                    f"{kind}_cline",
+                    tuple(max(0, c * 0.75) for c in body_color[:3]) + (1.0,),
+                    steps=2,
+                ),
             )
         )
-    parts.append(_headlight(f"{kind}_hl", (length * 0.47, 0.35, 0.45)))
-    parts.append(_headlight(f"{kind}_hl2", (length * 0.47, -0.35, 0.45)))
-    parts.append(_taillight(f"{kind}_tl", (-length * 0.48, 0.35, 0.48)))
-    parts.append(_taillight(f"{kind}_tl2", (-length * 0.48, -0.35, 0.48)))
+        parts.append(mesh_cube(f"{kind}_door", (0.03, 1.12, 0.26), (-0.05, 0, 0.46), dark))
 
-    # Character line + door seam for silhouette interest.
-    parts.append(
-        mesh_cube(
-            f"{kind}_cline", (length * 0.7, 1.17, 0.04), (0.05, 0, 0.48),
-            toon_material(f"{kind}_cline", tuple(max(0, c * 0.75) for c in body_color[:3]) + (1.0,), steps=2),
-        )
-    )
-    parts.append(mesh_cube(f"{kind}_door", (0.03, 1.18, 0.45), (0.05, 0, 0.55), dark))
-
-    # Side-view plates: skip mirrors — they read as floating flecks after outline.
-
-    # Sports spoiler skipped in side-view plates — thin wings become floating flecks.
     if kind == "taxi":
         sign = mesh_cube(
-            f"{kind}_sign", (0.42, 0.3, 0.22), (0.0, 0, 1.25),
+            f"{kind}_sign", (0.36, 0.28, 0.18), (0.0, 0, 1.28),
             toon_material(f"{kind}_sign", (0.12, 0.12, 0.12, 1.0), steps=2),
         )
         glow = mesh_cube(
-            f"{kind}_sg", (0.34, 0.24, 0.12), (0.0, 0, 1.28),
+            f"{kind}_sg", (0.28, 0.22, 0.1), (0.0, 0, 1.32),
             toon_material(f"{kind}_sg", (1.0, 0.85, 0.1, 1.0), steps=2),
         )
         parts.extend([sign, glow])
     elif kind == "police":
         bar = mesh_cube(
-            f"{kind}_bar", (0.55, 0.8, 0.14), (0.0, 0, 1.28),
+            f"{kind}_bar", (0.5, 0.7, 0.12), (0.0, 0, 1.24),
             toon_material(f"{kind}_bar", (0.1, 0.1, 0.12, 1.0), steps=2),
         )
         blue = mesh_uv_sphere(
-            f"{kind}_blue", 0.12, (-0.12, 0, 1.36),
+            f"{kind}_blue", 0.1, (-0.12, 0.15, 1.32),
             toon_material(f"{kind}_blue", (0.15, 0.45, 1.0, 1.0), steps=2),
-            scale=(1.2, 0.8, 0.55),
+            scale=(1.1, 0.7, 0.5),
         )
         red = mesh_uv_sphere(
-            f"{kind}_red", 0.12, (0.12, 0, 1.36),
+            f"{kind}_red", 0.1, (0.12, 0.15, 1.32),
             toon_material(f"{kind}_red", (1.0, 0.15, 0.12, 1.0), steps=2),
-            scale=(1.2, 0.8, 0.55),
+            scale=(1.1, 0.7, 0.5),
         )
         stripe = mesh_cube(
-            f"{kind}_stripe", (length * 0.85, 1.18, 0.12), (0, 0, 0.55),
+            f"{kind}_stripe", (length * 0.7, 1.12, 0.1), (0, 0, 0.52),
             toon_material(f"{kind}_stripe", (0.95, 0.95, 0.97, 1.0), steps=2),
         )
         parts.extend([bar, blue, red, stripe])
     elif kind == "washed":
         spark = toon_material(f"{kind}_spark", (1.0, 1.0, 1.0, 1.0), steps=2)
-        for i, loc in enumerate([(0.5, 0.2, 0.75), (0.0, -0.1, 1.1), (-0.4, 0.15, 1.05)]):
+        for i, loc in enumerate([(0.45, 0.5, 0.75), (-0.15, 0.45, 1.05), (-0.45, 0.5, 0.9)]):
             parts.append(
-                mesh_uv_sphere(f"{kind}_sp{i}", 0.09, loc, spark, scale=(1.0, 0.35, 1.0))
+                mesh_uv_sphere(f"{kind}_sp{i}", 0.08, loc, spark, scale=(1.0, 0.3, 1.0))
             )
     elif kind == "sunroof":
-        hatch = mesh_cube(f"{kind}_hatch", (0.5, 0.5, 0.06), (-0.1, 0, 1.22), dark)
-        g = mesh_cube(f"{kind}_hg", (0.36, 0.36, 0.05), (-0.1, 0, 1.25), glass)
+        hatch = mesh_cube(f"{kind}_hatch", (0.42, 0.45, 0.05), (-0.08, 0, 1.24), dark)
+        g = mesh_cube(f"{kind}_hg", (0.3, 0.32, 0.04), (-0.08, 0, 1.27), glass)
         parts.extend([hatch, g])
     elif kind == "limo":
-        for i, x in enumerate((-0.9, -0.15, 0.6)):
-            parts.append(mesh_cube(f"{kind}_door{i}", (0.04, 1.18, 0.4), (x, 0, 0.55), chrome))
+        # Pillars stop under the glass beltline.
+        for i, x in enumerate((-0.85, -0.1, 0.45)):
+            parts.append(mesh_cube(f"{kind}_door{i}", (0.035, 1.12, 0.22), (x, 0, 0.48), chrome))
 
     if with_wheels:
         xs = (-length * 0.32, length * 0.3)
