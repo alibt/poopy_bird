@@ -252,13 +252,12 @@ def build_car(
                 (-L * 0.42, 0.80),
             ]
             win_pts = _inset_poly(cabin, 0.12)
-        # Dark reveal behind glass so the cabin reads as a framed placeholder.
-        frame_pts = _inset_poly(cabin, 0.04)
+        # Dark reveal + glass from the same cabin poly (no glass bevel — it
+        # skewed the pane off the frame in ortho side view).
         frame = extrude_profile(
-            f"{kind}_win_frame", frame_pts, width=1.18, material=dark
+            f"{kind}_win_frame", _inset_poly(cabin, 0.05), width=1.18, material=dark
         )
         win = extrude_profile(f"{kind}_win", win_pts, width=glass_w, material=glass)
-        bevel(win, width=0.02, segments=2)
         parts.extend([frame, win])
 
     # Bumpers + near-side lights only (far-side lights ghost in ortho +Y).
